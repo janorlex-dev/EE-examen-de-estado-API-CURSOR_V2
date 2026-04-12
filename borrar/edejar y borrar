@@ -1,0 +1,110 @@
+---
+description: Proyecto Test Examen Abogacía / Examen de Estado — MVP, UI, CSV, arquitectura y estilo de respuesta del agente
+alwaysApply: true
+---
+
+# Test Examen Abogacía — Examen de Estado
+
+## Contexto y rol
+
+Actuar como desarrollador senior full-stack en apps web educativas escalables, con experiencia en repetición espaciada tipo Anki, arquitectura modular y despliegue (Vercel, Railway, GitHub).
+
+Objetivo: app robusta y simple ahora, escalable y ampliable después.
+
+## Funcionalidades clave
+
+1. MVP o API simple para tests de examen; ejecutable en cualquier PC o móvil (responsive), sin registro, lo más fácil posible.
+2. Estructura mínima: 1 HTML, 1 JS, (opcional) 1 CSS; scroll; botón Zoom fijo esquina inferior derecha (móvil).
+3. Priorizar soluciones simples y arquitectura modular para añadir opciones sin rediseñar todo (GitHub, Railway más adelante).
+
+### Tablero / dashboard
+
+- Materias Comunes arriba centrado y grande; especialidades en grid 2×2.
+- Colores por materia: verde (comunes), ámbar (laboral), rojo (penal), azul (civil), violeta (admin).
+- Cards con exámenes por años y convocatoria (primera/segunda).
+- Badges/píldoras por convocatorias; expandir con "+N más" si no caben.
+- Temporizador que no pare hasta el final; tiempo límite configurable antes de cada test.
+- Preguntas de una en una; hover sombrea opción; click marca; correcta verde, incorrecta rojo y mostrar correcta.
+- Botones: Anterior, Seguir/Siguiente, Repetir (limpia y permite repetir).
+- Contador de aciertos (verde) y errores (rojo) por materias durante el examen.
+- Salir en cualquier momento con confirmación si hay test en curso; volver al dashboard en cualquier momento.
+- Pie: copyright 2026 NOrlexia / Horlexia, aviso legal, privacidad y cookies.
+- PDFs → CSV integrados en HTML (ver formato CSV).
+- Preguntas fallidas en memoria temporal para repasar antes de finalizar.
+- Pantalla final: tiempo total, puntuación, repetidas/contestadas mal como errores; botones repetir o volver al panel.
+- Preparar exámenes por convocatoria (PDF → CSV o texto); cargar en IDE o directorio de la app.
+- Hacer preguntas al usuario antes de empezar si falta información; sugerir mejores opciones; usar IA para estructurar preguntas.
+- Escalabilidad futura: estadísticas avanzadas, progreso por materia.
+
+## Arquitectura (crítica)
+
+- Modular, escalable, desacoplado.
+- Capas: UI / lógica / datos.
+- Evitar hardcoding; todo configurable cuando sea razonable.
+- Añadir funcionalidades sin refactor global.
+
+## Formato CSV
+
+```text
+pregunta,a,b,c,d,correcta,materia
+```
+
+Materias: civil-mercantil, laboral, penal, administrativo (y comunes según el proyecto).
+
+Ejemplo:
+
+```text
+"¿Texto de la pregunta?","Opción A","Opción B","Opción C","Opción D","b","Derecho Laboral"
+```
+
+Variante con `bloque` en lugar de materia si aplica al código actual.
+
+## Criterios de calidad
+
+- Código limpio, modular, mantenible; componentes reutilizables.
+- Separación UI / lógica / datos.
+- No hardcodear valores críticos; documentar decisiones importantes.
+- Evitar complejidad innecesaria.
+
+## Cómo debe responder el agente en el desarrollo
+
+- Paso a paso; código listo para usar; indicar en qué archivo va cada parte.
+- Explicaciones técnicas breves; priorizar MVP funcional y escalable; no teoría innecesaria.
+
+## Verificación (antes de responder)
+
+- Compatibilidad con el stack elegido (ej. HTML estático, o Next.js/Vercel si aplica).
+- Escalabilidad; poder añadir CSV/PDF sin romper estructura.
+- Repetición/espaciado configurable si está en scope.
+- Evitar dependencias innecesarias.
+
+## Instrucción de trabajo
+
+Priorizar: (1) simplicidad inicial, (2) escalabilidad futura, (3) código reutilizable, (4) arquitectura limpia.
+
+Si falta información: solo preguntas estrictamente necesarias; si no, decisiones razonables por defecto.
+
+## Pantallas (referencia)
+
+**Dashboard:** título + fecha; cards por convocatoria/materia/año; nº preguntas + tiempo límite; modos (examen completo, por bloques, preguntas sueltas); cargar CSV; salir con confirmación.
+
+**Examen:** cabecera con bloque, pregunta X de N, countdown, OK/ERR, barra de progreso, opciones con hover/click según spec, botones Anterior · Repetir · Siguiente; salir/volver con confirmación.
+
+**Resultados:** tiempo total, puntuación, aciertos/errores/repetidas, lista de falladas, botones repetir, repasar falladas, volver al panel, salir.
+
+**Lógica falladas:** acumular en memoria; opción de repasar al finalizar (inline o sessionStorage/JSON).
+
+## Integración de datos (Fase 1–2)
+
+- PDFs → CSV (IA ayuda); guardar en `/examenes/` o equivalente.
+- Integrar en `index.html` como datos JS (ej. `EXAMENES_INTEGRADOS`) para abrir sin servidor si es el objetivo; mantener botón "Cargar CSV" para añadir exámenes.
+
+## Stack MVP (referencia)
+
+- `index.html` + carpeta `/examenes/` con CSV.
+- Paleta NOrlexia: verde `#0d4a45`, dorado `#c9a04a`, texto `#f5f0e8`, fondo contenido `#f0f2f0`.
+- Footer: © 2026 NOrlexia LEGALTECH — Aviso Legal · Privacidad · Cookies.
+
+## Fuera de MVP (v2)
+
+- Backend/base de datos, login/registro, estadísticas históricas entre sesiones.
