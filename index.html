@@ -1195,11 +1195,15 @@
 
     // ══ CSV ══
     function parseExamFromCsv(text, meta) {
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) return null;
-      const hdr = lines[0].split(",").map(h => h.trim().replace(/"/g, "").toLowerCase());
+      const raw = String(text).replace(/^\uFEFF/, "");
+      const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+      let hdrIdx = 0;
+      while (hdrIdx < lines.length && lines[hdrIdx].startsWith("#")) hdrIdx++;
+      if (hdrIdx >= lines.length - 1) return null;
+      const hdr = lines[hdrIdx].split(",").map(h => h.trim().replace(/"/g, "").toLowerCase());
       const qs = [];
-      for (let i = 1; i < lines.length; i++) {
+      for (let i = hdrIdx + 1; i < lines.length; i++) {
+        if (lines[i].startsWith("#")) continue;
         const v = parseCSV(lines[i]); if (v.length < 6) continue;
         const o = {}; hdr.forEach((h, j) => o[h] = (v[j] || "").trim());
         if (o.pregunta) qs.push(o);
@@ -1226,7 +1230,10 @@
         const name = f.name.replace(".csv", "").replace(/_/g, " ");
         const año = name.match(/\d{4}(\.\d)?/)?.[0] || "";
         const ex = parseExamFromCsv(e.target.result, { name, año, nuevo: true });
-        if (!ex) { alert("No se encontraron preguntas válidas."); return; }
+        if (!ex) {
+          alert("No se encontraron preguntas válidas.\n\nComprueba: primera columna de cabecera «pregunta», columnas a,b,c,d,correcta; UTF-8; si hay líneas de comentario al inicio (# …), deben ir antes de la fila de cabecera.");
+          return;
+        }
         examenes.push(ex);
         selIdx = examenes.length - 1;
         renderDash();
