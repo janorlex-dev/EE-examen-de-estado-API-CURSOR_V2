@@ -312,6 +312,30 @@
       margin-bottom: 0.6rem
     }
 
+    .mat-empty {
+      font-size: 0.72rem;
+      color: var(--gris);
+      line-height: 1.4
+    }
+
+    .mat-empty code {
+      font-size: 0.68rem;
+      background: var(--fondo);
+      padding: 1px 4px;
+      border-radius: 4px
+    }
+
+    .mat-extra-block {
+      margin-top: 1.1rem
+    }
+
+    .mat-extra-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--verde);
+      margin-bottom: 0.55rem
+    }
+
     /* Especialidades — grid 2x2 */
     .esp-grid {
       display: grid;
@@ -867,11 +891,7 @@
       </div>
       <input type="file" id="fileInput" accept=".csv">
 
-      <!-- Materias Comunes grande -->
-      <div class="mc-wrap" id="mcWrap"></div>
-
-      <!-- Especialidades 2x2 -->
-      <div class="esp-grid" id="espGrid"></div>
+      <div id="matGridRoot"></div>
 
       <!-- Panel configuración -->
       <div class="mode-panel" id="modePanel" style="display:none">
@@ -1009,69 +1029,96 @@
 
   <script>
     // ══ DATOS ══
-    const EXAMENES = [
-      {
-        name: "Materias Comunes 2025.2", año: "2025.2", materia: "Materias Comunes", nuevo: true, preguntas: [
-          { pregunta: "En un proceso civil donde la intervención de abogado no es preceptiva, la parte contraria es condenada en costas. ¿Se incluirán los honorarios devengados por abogado?", a: "No, se excluirán siempre.", b: "Sí, siempre y en todo caso.", c: "Solo si el Tribunal aprecia temeridad.", d: "Solo si aprecia temeridad o abuso del servicio público, o el domicilio está en partido judicial distinto.", correcta: "d", bloque: "Materias Comunes" },
-          { pregunta: "¿En qué plazo podrán ser rectificados los errores materiales manifiestos en que incurran las resoluciones de los tribunales?", a: "De oficio en un mes y a instancia de parte en dos días hábiles.", b: "Los errores materiales no pueden rectificarse, solo los aritméticos.", c: "En cualquier momento.", d: "En el plazo de diez días desde la notificación.", correcta: "c", bloque: "Materias Comunes" },
-          { pregunta: "¿A qué plazo se extiende el deber de secreto profesional del profesional de la abogacía?", a: "Durante la prestación de servicios, cesando al terminar.", b: "Cinco años después de la terminación.", c: "Incluso después de cesar, sin limitación temporal.", d: "Hasta que transcurran diez años del cese.", correcta: "c", bloque: "Materias Comunes" },
-          { pregunta: "¿Cuál es el número máximo de profesionales que puede integrar el despacho colectivo?", a: "No existe limitación de número.", b: "Un máximo de cinco.", c: "Un máximo de cien.", d: "Un máximo de veinte.", correcta: "a", bloque: "Materias Comunes" },
-          { pregunta: "¿Cuál es el efecto jurídico de un acto realizado en fraude de ley?", a: "Se tiene por no realizado.", b: "No impide la debida aplicación de la norma que se hubiere tratado de eludir.", c: "Queda supeditado a la ratificación judicial.", d: "Queda en suspenso.", correcta: "b", bloque: "Materias Comunes" },
-        ]
-      },
-      {
-        name: "Materias Comunes 2025.1", año: "2025.1", materia: "Materias Comunes", nuevo: true, preguntas: [
-          { pregunta: "¿Cuál de las siguientes afirmaciones se corresponde con el contenido del derecho de defensa?", a: "No incluye el derecho a la invariabilidad de las resoluciones firmes.", b: "El legislador no podrá condicionar el acceso a los medios de impugnación al cumplimiento de plazos.", c: "El ejercicio del derecho de defensa queda sujeto al procedimiento legalmente establecido.", d: "Excluye que los jueces puedan ampliar motivadamente los plazos señalados.", correcta: "c", bloque: "Materias Comunes" },
-          { pregunta: "¿Cuál es el plazo en el que el profesional de la abogacía debe dar respuesta a las reclamaciones de los clientes?", a: "En el periodo más breve posible, sin plazo máximo.", b: "Antes de un mes desde que se hayan recibido.", c: "Antes de dos meses desde que se hayan recibido.", d: "No existe obligación de dar respuesta.", correcta: "b", bloque: "Materias Comunes" },
-        ]
-      },
-      {
-        name: "Materias Comunes 2024.2", año: "2024.2", materia: "Materias Comunes", nuevo: false, preguntas: [
-          { pregunta: "¿Cuál es el efecto jurídico de un acto realizado en fraude de ley?", a: "Se tiene por no realizado.", b: "No impide la debida aplicación de la norma eludida.", c: "Queda supeditado a ratificación judicial.", d: "Queda en suspenso.", correcta: "b", bloque: "Materias Comunes" },
-        ]
-      },
-      {
-        name: "Derecho Laboral 2025.2", año: "2025.2", materia: "Derecho Laboral", nuevo: true, preguntas: [
-          { pregunta: "¿Cuál es el plazo para presentar demanda de despido ante el Juzgado de lo Social?", a: "10 días hábiles", b: "20 días hábiles", c: "30 días hábiles", d: "60 días hábiles", correcta: "b", bloque: "Derecho Laboral" },
-          { pregunta: "¿En qué supuesto el despido disciplinario se considera nulo?", a: "Cuando el empresario no entrega carta de despido.", b: "Cuando afecta a derechos fundamentales del trabajador.", c: "Cuando no se abonan las partes proporcionales.", d: "Cuando el trabajador lleva menos de 1 año en la empresa.", correcta: "b", bloque: "Derecho Laboral" },
-        ]
-      },
-      {
-        name: "Derecho Laboral 2024.2", año: "2024.2", materia: "Derecho Laboral", nuevo: false, preguntas: [
-          { pregunta: "La indemnización por despido improcedente es de:", a: "20 días por año trabajado con máximo de 12 mensualidades.", b: "33 días por año trabajado con máximo de 24 mensualidades.", c: "45 días por año trabajado con máximo de 42 mensualidades.", d: "30 días por año trabajado sin límite.", correcta: "b", bloque: "Derecho Laboral" },
-        ]
-      },
-      {
-        name: "Derecho Penal 2025.2", año: "2025.2", materia: "Derecho Penal", nuevo: true, preguntas: [
-          { pregunta: "¿Cuál es la pena mínima del delito de estafa según el Código Penal cuando la cuantía supera 400 €?", a: "Arresto de fin de semana.", b: "Multa de 3 meses.", c: "Prisión de 6 meses.", d: "Localización permanente.", correcta: "c", bloque: "Derecho Penal" },
-        ]
-      },
-      {
-        name: "Derecho Civil 2025.2", año: "2025.2", materia: "Derecho Civil y Mercantil", nuevo: true, preguntas: [
-          { pregunta: "¿Cuál es el plazo de prescripción de la acción para exigir responsabilidad extracontractual en el Código Civil?", a: "1 año", b: "3 años", c: "5 años", d: "15 años", correcta: "a", bloque: "Derecho Civil y Mercantil" },
-          { pregunta: "¿Qué órgano conoce del recurso de casación en el orden civil?", a: "Audiencia Provincial", b: "Tribunal Superior de Justicia", c: "Tribunal Supremo", d: "Juzgado de Primera Instancia", correcta: "c", bloque: "Derecho Civil y Mercantil" },
-        ]
-      },
-      {
-        name: "Derecho Administrativo 2025.2", año: "2025.2", materia: "Derecho Administrativo", nuevo: true, preguntas: [
-          { pregunta: "¿Cuál es el plazo que tiene la Administración para resolver y notificar en el procedimiento administrativo común según la LPAC?", a: "1 mes", b: "2 meses", c: "3 meses", d: "6 meses", correcta: "c", bloque: "Derecho Administrativo" },
-        ]
-      },
-    ];
+    const EXAMENES = [];
 
-    /** CSV en /examenes/ — se cargan con fetch si abres la app por HTTP (Live Server, etc.). */
+    /** Añade aquí una línea por cada CSV en examenes/ (ruta relativa a index.html). */
     const CSV_MANIFEST = [
+      { file: "examenes/Comun_2018_1.csv", name: "Materias Comunes 2018.1", año: "2018.1", materia: "Materias Comunes" },
+      { file: "examenes/Comun_2025_1.csv", name: "Materias Comunes 2025.1", año: "2025.1", materia: "Materias Comunes" },
       { file: "examenes/laboral_2021_1.csv", name: "Derecho Laboral 2021.1", año: "2021.1", materia: "Derecho Laboral" },
       { file: "examenes/laboral_2021_2.csv", name: "Derecho Laboral 2021.2", año: "2021.2", materia: "Derecho Laboral" },
       { file: "examenes/laboral_2022_1.csv", name: "Derecho Laboral 2022.1", año: "2022.1", materia: "Derecho Laboral" },
       { file: "examenes/laboral_2022_2.csv", name: "Derecho Laboral 2022.2", año: "2022.2", materia: "Derecho Laboral" },
-      { file: "examenes/laboral_2024_1.csv", name: "Derecho laboral 2024.1", año: "2024.1", materia: "Derecho laboral" },
-      { file: "examenes/laboral_2024_2.csv", name: "Derecho Laboral 2024.2", año: "2024.2", materia: "Derecho laboral" },
-      { file: "examenes/laboral_2025_1.csv", name: "Derecho Laboral 2025.1", año: "2025.1", materia: "Derecho laboral" },
-      { file: "examenes/comun_2018_1.csv", name: "Materias Comunes 2018.1", año: "2018.1", materia: "Materias Comunes" },
-      { file: "examenes/comun_2025_1.csv", name: "Materias Comunes 2025.1", año: "2025.1", materia: "Materias Comunes" },
-
+      { file: "examenes/laboral_2024_1.csv", name: "Derecho Laboral 2024.1", año: "2024.1", materia: "Derecho Laboral" },
+      { file: "examenes/laboral_2024_2.csv", name: "Derecho Laboral 2024.2", año: "2024.2", materia: "Derecho Laboral" },
+      { file: "examenes/laboral_2025_1.csv", name: "Derecho Laboral 2025.1", año: "2025.1", materia: "Derecho Laboral" },
+      { file: "examenes/laboral_2025_2.csv", name: "Derecho Laboral 2025.2", año: "2025.2", materia: "Derecho Laboral" },
     ];
+
+    /** Orden fijo del panel: Comunes + 4 especialidades en grid 2×2. */
+    const MATERIAS_FIJAS = [
+      { key: "Materias Comunes", title: "Materias Comunes", desc: "Deontología, organización colegial y cuestiones transversales del ejercicio de la abogacía.", wide: true },
+      { key: "Derecho Laboral", title: "Derecho Laboral", desc: "Especialidad laboral.", wide: false },
+      { key: "Derecho Civil y Mercantil", title: "Civil y Mercantil", desc: "Especialidad civil y mercantil.", wide: false },
+      { key: "Derecho Administrativo", title: "Administrativo", desc: "Especialidad administrativa.", wide: false },
+      { key: "Derecho Penal", title: "Penal", desc: "Especialidad penal.", wide: false },
+    ];
+    const FIJA_SET = new Set(MATERIAS_FIJAS.map(x => x.key));
+
+    function normalizeMateria(s) {
+      if (!s || !String(s).trim()) return "";
+      const t = String(s).trim();
+      const lower = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const map = {
+        "materias comunes": "Materias Comunes",
+        "comunes": "Materias Comunes",
+        "comun": "Materias Comunes",
+        "derecho laboral": "Derecho Laboral",
+        "laboral": "Derecho Laboral",
+        "derecho penal": "Derecho Penal",
+        "penal": "Derecho Penal",
+        "derecho civil y mercantil": "Derecho Civil y Mercantil",
+        "civil y mercantil": "Derecho Civil y Mercantil",
+        "civil-mercantil": "Derecho Civil y Mercantil",
+        "civil mercantil": "Derecho Civil y Mercantil",
+        "civil": "Derecho Civil y Mercantil",
+        "mercantil": "Derecho Civil y Mercantil",
+        "derecho administrativo": "Derecho Administrativo",
+        "administrativo": "Derecho Administrativo",
+        "admin": "Derecho Administrativo",
+      };
+      if (map[lower]) return map[lower];
+      if (lower === "comun" || lower.startsWith("comun ")) return "Materias Comunes";
+      if (lower.includes("comun") && !lower.includes("mercantil")) return "Materias Comunes";
+      if (lower.includes("laboral") && !lower.includes("mercantil")) return "Derecho Laboral";
+      if (lower.includes("penal") && !lower.includes("mercantil")) return "Derecho Penal";
+      if (lower.includes("administrativ")) return "Derecho Administrativo";
+      if (lower.includes("civil") || lower.includes("mercantil")) return "Derecho Civil y Mercantil";
+      return t;
+    }
+
+    function inferMateriaFromFilename(fname) {
+      if (!fname) return "";
+      const base = String(fname).toLowerCase().replace(/\\/g, "/").split("/").pop() || "";
+      const b = base.replace(/\.csv$/i, "");
+      if (/^comun/i.test(b) || /^comunes/i.test(b)) return "Materias Comunes";
+      if (/^laboral/i.test(b)) return "Derecho Laboral";
+      if (/^civil|^mercantil|^civ_/i.test(b)) return "Derecho Civil y Mercantil";
+      if (/^penal/i.test(b)) return "Derecho Penal";
+      if (/^admin/i.test(b)) return "Derecho Administrativo";
+      return "";
+    }
+
+    function examLabel(ex) {
+      if (ex.label) return ex.label;
+      if (ex.sourceFile) return ex.sourceFile.split("/").pop().replace(/\.csv$/i, "");
+      if (ex.uploadName) return ex.uploadName.replace(/\.csv$/i, "");
+      return ex.año || ex.name || "?";
+    }
+
+    function groupExamsByMateria() {
+      const by = {};
+      examenes.forEach((e, i) => {
+        const k = e.materia || "Otros";
+        if (!by[k]) by[k] = [];
+        by[k].push({ ...e, idx: i });
+      });
+      return by;
+    }
+
+    function escAttr(t) {
+      return String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    }
 
     // ══ COLORES POR MATERIA ══
     const MAT_STYLE = {
@@ -1110,75 +1157,74 @@
     }
 
     // ══ DASHBOARD ══
-    function renderDash() {
-      const materias = {};
-      examenes.forEach((e, i) => {
-        if (!materias[e.materia]) materias[e.materia] = [];
-        materias[e.materia].push({ ...e, idx: i });
-      });
-
-      // Materias Comunes grande
-      const mcData = materias["Materias Comunes"] || [];
-      const ms = matStyle("Materias Comunes");
-      document.getElementById("mcWrap").innerHTML = mcData.length ? `
-    <div class="mc-card" style="border-color:${ms.border}">
+    function renderMatCard(def, exs, wide) {
+      const s = matStyle(def.key);
+      const buttons = exs.length
+        ? examButtonsHTML(exs, s)
+        : `<div class="mat-empty">Ningún CSV aún. Añade una línea en <code>CSV_MANIFEST</code> apuntando a <code>examenes/tu_archivo.csv</code> o usa <strong>Cargar CSV</strong>.</div>`;
+      const n = exs.length;
+      const cnt = `${n} convocatoria${n !== 1 ? "s" : ""}`;
+      if (wide) {
+        return `<div class="mc-wrap"><div class="mc-card" style="border-color:${s.border}">
       <div class="mc-card-top">
-        <div class="mat-icon" style="background:${ms.bg};color:${ms.fg};font-size:1.2rem">${ms.icon}</div>
+        <div class="mat-icon" style="background:${s.bg};color:${s.fg};font-size:1.2rem">${s.icon}</div>
         <div>
-          <div class="mat-title">Materias Comunes</div>
-          <div class="mat-desc">Deontología, organización colegial y cuestiones transversales del ejercicio de la abogacía.</div>
+          <div class="mat-title">${def.title}</div>
+          <div class="mat-desc">${def.desc}</div>
         </div>
       </div>
-      <div class="mat-count">${mcData.length} convocatoria${mcData.length > 1 ? "s" : ""} disponibles</div>
-      ${badgesHTML(mcData, ms, 6)}
-      <a class="mat-link" style="color:${ms.fg}" onclick="toggleMore('mc')">Ver todos los tests de Materias Comunes →</a>
-    </div>`: "";
-
-      // Especialidades
-      const esp = Object.entries(materias).filter(([m]) => m !== "Materias Comunes");
-      document.getElementById("espGrid").innerHTML = esp.map(([mat, exs]) => {
-        const s = matStyle(mat);
-        return `<div class="esp-card" style="border-color:${s.border}20;--hc:${s.border}">
+      <div class="mat-count">${cnt}</div>
+      ${buttons}
+    </div></div>`;
+      }
+      return `<div class="esp-card" style="border-color:${s.border}20;--hc:${s.border}">
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
         <div class="mat-icon" style="background:${s.bg};color:${s.fg};width:32px;height:32px;font-size:.9rem">${s.icon}</div>
-        <div class="mat-title" style="font-size:.92rem">${mat}</div>
+        <div class="mat-title" style="font-size:.92rem">${def.title}</div>
       </div>
-      <div class="mat-desc">${exs.length} convocatoria${exs.length > 1 ? "s" : ""} · ${exs[0].preguntas.length} preguntas</div>
-      ${badgesHTML(exs, s, 4)}
-      <a class="mat-link" style="color:${s.fg}">Ver todos los tests de ${mat} →</a>
+      <div class="mat-desc">${def.desc}</div>
+      <div class="mat-count">${cnt}</div>
+      ${buttons}
     </div>`;
-      }).join("");
     }
 
-    function badgesHTML(exs, s, limit) {
-      const sorted = [...exs].sort((a, b) => b.año.localeCompare(a.año));
-      const visible = sorted.slice(0, limit);
-      const hidden = sorted.slice(limit);
-      let html = `<div class="badges-row" id="br_${s.fg.replace('#', '')}">`;
-      visible.forEach(e => {
+    function examButtonsHTML(exs, s) {
+      const sorted = [...exs].sort((a, b) => String(b.año).localeCompare(String(a.año)));
+      let html = `<div class="badges-row">`;
+      sorted.forEach(e => {
+        const lbl = examLabel(e);
         html += `<span class="badge${e.nuevo ? " nuevo" : ""}" 
       style="background:${s.bg};color:${s.fg};border-color:${s.fg}30"
       onclick="selectExam(${e.idx})"
-      title="${e.name} · ${e.preguntas.length} preguntas"
-    >${e.año}</span>`;
+      title="${escAttr(e.name + " · " + e.preguntas.length + " preguntas")}"
+    >${lbl}</span>`;
       });
-      if (hidden.length) {
-        html += `<span class="show-more" onclick="this.previousElementSibling&&expandBadges(this,${JSON.stringify(hidden.map(e => e.idx))})">+${hidden.length} más</span>`;
-      }
       html += `</div>`;
       return html;
     }
 
-    function expandBadges(el, idxs) {
-      idxs.forEach(i => {
-        const e = examenes[i]; const s = matStyle(e.materia);
-        const b = document.createElement("span");
-        b.className = "badge" + (e.nuevo ? " nuevo" : "");
-        b.style.cssText = `background:${s.bg};color:${s.fg};border-color:${s.fg}30`;
-        b.textContent = e.año; b.onclick = () => selectExam(i);
-        el.parentNode.insertBefore(b, el);
-      });
-      el.remove();
+    function renderDash() {
+      const by = groupExamsByMateria();
+      const root = document.getElementById("matGridRoot");
+      if (!root) return;
+      let html = "";
+      const comunes = MATERIAS_FIJAS[0];
+      html += renderMatCard(comunes, by[comunes.key] || [], true);
+      html += `<div class="esp-grid">`;
+      for (let i = 1; i < MATERIAS_FIJAS.length; i++) {
+        const def = MATERIAS_FIJAS[i];
+        html += renderMatCard(def, by[def.key] || [], false);
+      }
+      html += `</div>`;
+      const extras = Object.keys(by).filter(k => !FIJA_SET.has(k)).sort();
+      if (extras.length) {
+        html += `<div class="mat-extra-block"><div class="mat-extra-title">Otras materias</div><div class="esp-grid">`;
+        extras.forEach(k => {
+          html += renderMatCard({ key: k, title: k, desc: "Materia detectada en el CSV o al cargar el archivo." }, by[k], false);
+        });
+        html += `</div></div>`;
+      }
+      root.innerHTML = html;
     }
 
     function selectExam(i) {
@@ -1195,8 +1241,8 @@
 
     // ══ CSV ══
     function parseExamFromCsv(text, meta) {
-      const raw = String(text).replace(/^\uFEFF/, "");
-      const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+      const rawText = String(text).replace(/^\uFEFF/, "");
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
       let hdrIdx = 0;
       while (hdrIdx < lines.length && lines[hdrIdx].startsWith("#")) hdrIdx++;
       if (hdrIdx >= lines.length - 1) return null;
@@ -1209,31 +1255,49 @@
         if (o.pregunta) qs.push(o);
       }
       if (!qs.length) return null;
-      const bloque0 = qs[0]?.bloque || "";
-      const materia = meta.materia || (bloque0.split(" - ")[0] || bloque0 || "Sin clasificar");
-      return { name: meta.name, preguntas: qs, año: meta.año || "", materia, nuevo: meta.nuevo !== false };
+      const bloque0 = qs[0]?.bloque || qs[0]?.materia || "";
+      let rawMat = meta.materia;
+      if (rawMat === undefined || rawMat === null || rawMat === "") {
+        rawMat = bloque0.split(" - ")[0] || bloque0 || "";
+      }
+      let mat = rawMat ? normalizeMateria(String(rawMat)) : "";
+      if (!mat) mat = inferMateriaFromFilename(meta.filename || "");
+      if (!mat) mat = (String(rawMat || "").trim()) || "Otros";
+      return { name: meta.name, preguntas: qs, año: meta.año || "", materia: mat, nuevo: meta.nuevo !== false };
     }
     async function loadManifestCsvs() {
+      const seen = new Set();
       for (const spec of CSV_MANIFEST) {
+        if (seen.has(spec.file)) continue;
         try {
           const res = await fetch(spec.file, { cache: "no-store" });
           if (!res.ok) continue;
-          const ex = parseExamFromCsv(await res.text(), { ...spec, nuevo: false });
-          if (ex) examenes.push(ex);
-        } catch (_) {/* file:// o carpeta sin servidor: usar «Cargar CSV» */ }
+          const fn = spec.file.split("/").pop();
+          const ex = parseExamFromCsv(await res.text(), { ...spec, nuevo: false, filename: fn });
+          if (ex) {
+            ex.sourceFile = spec.file;
+            ex.label = spec.label || fn.replace(/\.csv$/i, "");
+            seen.add(spec.file);
+            examenes.push(ex);
+          }
+        } catch (_) {/* file:// o sin servidor: usar «Cargar CSV» */ }
       }
     }
     function loadCSV(ev) {
       const f = ev.target.files[0]; if (!f) return;
       const r = new FileReader();
       r.onload = e => {
-        const name = f.name.replace(".csv", "").replace(/_/g, " ");
-        const año = name.match(/\d{4}(\.\d)?/)?.[0] || "";
-        const ex = parseExamFromCsv(e.target.result, { name, año, nuevo: true });
+        const fn = f.name;
+        const stem = fn.replace(/\.csv$/i, "");
+        const name = stem.replace(/_/g, " ");
+        const año = stem.match(/\d{4}(?:[._]\d)?/)?.[0]?.replace("_", ".") || "";
+        const ex = parseExamFromCsv(e.target.result, { name, año, nuevo: true, filename: fn });
         if (!ex) {
           alert("No se encontraron preguntas válidas.\n\nComprueba: primera columna de cabecera «pregunta», columnas a,b,c,d,correcta; UTF-8; si hay líneas de comentario al inicio (# …), deben ir antes de la fila de cabecera.");
           return;
         }
+        ex.uploadName = fn;
+        ex.label = stem;
         examenes.push(ex);
         selIdx = examenes.length - 1;
         renderDash();
