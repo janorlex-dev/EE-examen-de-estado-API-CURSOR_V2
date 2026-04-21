@@ -433,6 +433,46 @@
       margin-top: 1rem
     }
 
+    /* Pantalla Configurar sesión (dedicada) */
+    .config-wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 1rem
+    }
+
+    .config-back {
+      margin-bottom: 0.75rem
+    }
+
+    #screenConfig .mode-panel {
+      margin-top: 0;
+      padding: 1.5rem 1.5rem
+    }
+
+    #screenConfig .mode-panel-title {
+      font-size: 1rem;
+      margin-bottom: 0.6rem
+    }
+
+    #screenConfig .panel-actions {
+      margin-top: 1.2rem
+    }
+
+    #screenConfig .panel-actions .btn {
+      min-width: 180px;
+      padding: 0.7rem 1.2rem
+    }
+
+    @media (max-width: 560px) {
+      #screenConfig .mode-panel {
+        padding: 1.2rem 1rem
+      }
+
+      #screenConfig .panel-actions .btn {
+        width: 100%
+      }
+    }
+
     .mode-panel-title {
       font-size: 0.82rem;
       font-weight: 600;
@@ -1011,26 +1051,32 @@
       <input type="file" id="fileInput" accept=".csv">
 
       <div id="matGridRoot"></div>
+    </div>
 
-      <!-- Panel configuración -->
-      <div class="mode-panel" id="modePanel" style="display:none">
-        <div class="mode-panel-title">Configurar sesión</div>
-        <div class="selected-label" id="selLabel"></div>
-        <div class="mode-btns">
-          <button class="mode-btn active" data-mode="completo" onclick="setMode(this)">Examen completo</button>
-          <button class="mode-btn" data-mode="aleatorio" onclick="setMode(this)">Aleatorio</button>
+    <!-- ══ CONFIGURAR SESIÓN (pantalla dedicada) ══ -->
+    <div class="screen" id="screenConfig">
+      <div class="config-wrap">
+        <div class="config-back">
+          <button class="btn btn-outline btn-sm" onclick="closePanel()">← Volver a la principal</button>
         </div>
-        <div class="cfg-row">
-          Tiempo límite:
-          <input type="number" id="horas" value="3" min="0" max="9"> h
-          <input type="number" id="mins" value="0" min="0" max="59"> min
-          <span id="nPregCfg" style="display:none;align-items:center;gap:.4rem">
-            &nbsp;· Nº preguntas: <input type="number" id="nPreg" value="20" min="5" max="200">
-          </span>
-        </div>
-        <div class="panel-actions">
-          <button class="btn btn-primary" onclick="startExam()">Iniciar examen</button>
-          <button class="btn btn-outline" onclick="closePanel()">Cancelar</button>
+        <div class="mode-panel" id="modePanel">
+          <div class="mode-panel-title">Configurar sesión</div>
+          <div class="selected-label" id="selLabel"></div>
+          <div class="mode-btns">
+            <button class="mode-btn active" data-mode="completo" onclick="setMode(this)">Examen completo</button>
+            <button class="mode-btn" data-mode="aleatorio" onclick="setMode(this)">Aleatorio</button>
+          </div>
+          <div class="cfg-row">
+            Tiempo límite:
+            <input type="number" id="horas" value="3" min="0" max="9"> h
+            <input type="number" id="mins" value="0" min="0" max="59"> min
+            <span id="nPregCfg" style="display:none;align-items:center;gap:.4rem">
+              &nbsp;· Nº preguntas: <input type="number" id="nPreg" value="20" min="5" max="200">
+            </span>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-primary" onclick="startExam()">Iniciar examen</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1544,12 +1590,15 @@
       const e = examenes[i];
       const s = matStyle(e.materia);
       document.getElementById("selLabel").textContent = `${e.name} · ${e.preguntas.length} preguntas`;
-      document.getElementById("modePanel").style.display = "block";
       document.getElementById("modePanel").style.borderColor = s.border;
-      document.getElementById("modePanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      showScreen("screenConfig");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    function closePanel() { selIdx = -1; document.getElementById("modePanel").style.display = "none"; }
+    function closePanel() {
+      selIdx = -1;
+      showDash();
+    }
 
     // ══ CSV ══
     function parseExamFromCsv(text, meta) {
