@@ -271,5 +271,135 @@ Si falta información:
 ·	Haz solo las preguntas estrictamente necesarias
 ·	Si no, toma decisiones razonables por defecto
 
+---
+
+## FUNCIONALIDAD — NOTAS POR PREGUNTA (v1, implementada)
+
+Objetivo: permitir al usuario añadir una nota breve a cualquier pregunta,
+que se guarde de forma persistente y se sincronice entre PC y móvil.
+
+### Flujo UX (obligatorio mantener)
+
+1.	Pregunta SIN responder → no se muestra nada relativo a notas.
+2.	Pregunta RESPONDIDA sin nota previa → botón pequeño `➕ Añadir nota`
+	debajo de las opciones.  Al pulsarlo se abre un `<textarea>` con
+	autofoco. Al salir del campo (`blur`) se guarda automáticamente y se
+	cierra el editor.  Si no se pulsa el botón y se pulsa `Siguiente →`
+	la navegación avanza sin crear nada.
+3.	Pregunta RESPONDIDA con nota previa → banner dorado
+	`📝 Nota: {texto}` + botón pequeño `✏ Editar nota`.  Al pulsar
+	`Editar` se abre el `<textarea>` con el texto existente.  Si se
+	vacía y se sale del campo, la nota se elimina (vuelve al estado 2).
+4.	Pantalla de REPASO (preguntas falladas) → solo lectura.  Si hay
+	nota se muestra el banner dorado; no hay botones de crear/editar.
+
+Persistencia
+·	Guardado automático al perder el foco (`blur`).  No hay botón
+	`Guardar` explícito ni botón `Cancelar`.
+·	Indicador de estado en el editor: `Solo local` (dorado) ·
+	`Guardando…` (gris) · `Sincronizada ✓` (verde) ·
+	`Error sync · guardada local` (rojo).
+
+### Identificador estable de cada pregunta
+
+Clave: `keyQ(examName, origIdx) = slug(examName) + "__q" + NN`
+
+Ejemplos
+·	`materias_comunes_2025.2__q01`
+·	`laboral_2024__q16`
+·	`civil_2025.1__q23`
+
+Reglas
+·	`origIdx` es el índice ORIGINAL en el CSV (0-based), no la posición
+	durante el test.  Se asigna en `startExam()` con
+	`ex.preguntas.map((p, i) => ({ ...p, _origIdx: i }))` ANTES de
+	barajar en modo aleatorio.  Así la nota siempre apunta a la misma
+	pregunta aunque el test sea aleatorio.
+·	Nunca usar el texto de la pregunta como clave: si se corrige una
+	errata en el CSV la nota quedaría huérfana.
+·	Numeración siempre 1-based con 2 dígitos (`__q01 … __q99`).
+
+### Arquitectura de datos
+
+Capas (en orden de prioridad al leer/escribir)
+1.	`notasCache` → objeto en memoria, fuente de verdad durante la
+	sesión.
+2.	`localStorage["norlexia_notas_v1"]` → espejo JSON, respaldo offline.
+3.	Supabase tabla `public.notas` → sincronización entre dispositivos.
+
+Orden de escritura (en `guardarNota`)
+1.	Actualizar `notasCache` (síncrono).
+2.	Persistir `localStorage` (síncrono).
+3.	`upsert`/`delete` a Supabase en background (asíncrono).
+4.	Reflejar estado en el indicador UI.
+
+Orden de lectura (en `initNotas` al arrancar)
+1.	Cargar `localStorage` → `notasCache`.
+2.	Si hay credenciales Supabase, descargar todas las filas y fusionar
+	sobre la cache (Supabase prevalece).
+3.	Persistir el resultado en `localStorage`.
+
+### Esquema Supabase
+
+Tabla `public.notas`:
+·	`id_pregunta text primary key`
+·	`nota text not null default ''`
+·	`updated_at timestamptz not null default now()`
+
+RLS activado.  Políticas abiertas (`using (true)` / `with check (true)`)
+para el MVP sin login.  Cuando se añada autenticación, sustituir por
+filtros `auth.uid() = user_id` y añadir columna `user_id`.
+
+Credenciales en `index.html`
+·	`SUPABASE_URL` — Project URL del dashboard.
+·	`SUPABASE_KEY` — la `publishable key` (o `anon` key).  Va en el
+	navegador por diseño; la seguridad la aporta RLS.
+·	NUNCA incluir la `service_role` / `secret` key en el frontend.
+
+### Separación secretos / repo
+
+·	Carpeta `.secretos/` → contraseñas, tokens personales, notas
+	privadas.  Ignorada por `.gitignore`.
+·	Archivo `.gitignore` en la raíz con reglas para `.secretos/`,
+	`.env*`, `node_modules/`, PDFs y DOCX en `/examenes/`, etc.
+·	Comprobar siempre con `git check-ignore -v <ruta>` antes de
+	commitear algo sensible.
+
+### Reglas para futuras modificaciones
+
+·	Respetar el flujo UX de 3 estados (ver arriba).  No añadir el
+	textarea siempre visible ni mostrar la nota antes de responder.
+·	Toda escritura de nota pasa por `guardarNota(id, texto)`.  Nunca
+	tocar `notasCache` ni `localStorage` directamente desde la UI.
+·	Toda lectura pasa por `notasCache[id]`.  Nunca consultar Supabase
+	síncronamente desde el render.
+·	Si se añade multiusuario, añadir `user_id` a la tabla y al cache,
+	pero mantener la misma API de `guardarNota`/`renderNota`.
+·	Si se cambia la forma de generar el ID, proveer migración SQL o
+	script de renombrado de claves en Supabase.  Los IDs ya escritos
+	son contrato.
+
+### Archivos implicados
+
+·	`index.html` → módulo NOTAS (config, cache, init, guardar, render,
+	helpers `abrirEditNota` / `cerrarEditNota` / `renderQNota` /
+	`renderRepasoNota`), CSS de `.nota-*`, SDK Supabase vía CDN,
+	contenedores `<div id="qNotaWrap">` y `<div id="rqNotaWrap">` en
+	las pantallas de examen y repaso.
+·	`SUPABASE_SETUP.md` → guía paso a paso para crear el proyecto,
+	ejecutar el SQL, pegar credenciales y verificar.
+·	`.gitignore` → reglas de exclusión (incluye `.secretos/`).
+·	`.secretos/` → carpeta privada del usuario (no versionada).
+
+### Checklist para el agente al tocar este módulo
+
+·	¿Respeta el flujo UX de 3 estados y el modo readonly en repaso?
+·	¿Preserva `_origIdx` como índice del CSV original?
+·	¿Mantiene el contrato `slug(examName) + "__qNN"` del ID?
+·	¿Pasa por `guardarNota` / `notasCache` y nunca por acceso directo
+	a `localStorage` o Supabase desde el render?
+·	¿Funciona sin credenciales Supabase (fallback `Solo local`)?
+·	¿Evita exponer la `service_role` key?
+·	¿Añade/actualiza `SUPABASE_SETUP.md` si cambia el esquema?
 
 
