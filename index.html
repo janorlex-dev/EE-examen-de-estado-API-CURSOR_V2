@@ -883,6 +883,316 @@
       outline-offset: 2px
     }
 
+    /* ── Códigos y leyes (enlaces) ── */
+    .dash-tools {
+      display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
+      margin: 0 1rem 1rem;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto
+    }
+
+    .tool-btn {
+      flex: 1 1 220px;
+      background: #fff;
+      border: 2px solid var(--verde);
+      color: var(--verde);
+      padding: .7rem 1rem;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      transition: background .15s, color .15s, transform .08s
+    }
+
+    .tool-btn:hover {
+      background: var(--verde);
+      color: var(--crema)
+    }
+
+    .tool-btn:active {
+      transform: scale(0.98)
+    }
+
+    .enl-link-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--verde);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: .35rem .7rem;
+      border-radius: 6px;
+      transition: all .15s;
+      font-family: inherit;
+      margin-left: .3rem
+    }
+
+    .enl-link-btn:hover {
+      background: #e6f2f1;
+      border-color: #c8dad7
+    }
+
+    .modal-ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 74, 69, 0.55);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 200;
+      padding: 2rem 1rem;
+      overflow-y: auto;
+      animation: modalFade .18s ease-out
+    }
+
+    .modal-ov.active {
+      display: flex
+    }
+
+    @keyframes modalFade {
+      from { opacity: 0 }
+      to   { opacity: 1 }
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 760px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+      overflow: hidden;
+      animation: modalIn .22s ease-out
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(-12px) scale(.98) }
+      to   { opacity: 1; transform: translateY(0) scale(1) }
+    }
+
+    .modal-head {
+      background: var(--verde);
+      color: var(--crema);
+      padding: .9rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    .modal-close {
+      background: transparent;
+      border: 1px solid rgba(245, 240, 232, .3);
+      color: var(--crema);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-family: inherit
+    }
+
+    .modal-close:hover {
+      background: rgba(245, 240, 232, .15)
+    }
+
+    .modal-body {
+      padding: 1rem 1.2rem 1.2rem
+    }
+
+    .enl-form {
+      display: grid;
+      grid-template-columns: 1fr 2fr auto;
+      gap: .5rem;
+      margin-bottom: .9rem
+    }
+
+    .enl-form input {
+      padding: .55rem .7rem;
+      border: 1px solid #d9d3c6;
+      border-radius: 8px;
+      font: inherit;
+      font-size: .88rem;
+      background: #fffdf8;
+      color: var(--texto);
+      min-width: 0
+    }
+
+    .enl-form input:focus {
+      outline: none;
+      border-color: var(--dorado);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(201, 160, 74, .15)
+    }
+
+    .enl-form button {
+      background: var(--verde);
+      color: var(--crema);
+      border: none;
+      padding: .55rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap
+    }
+
+    .enl-form button:hover {
+      background: var(--verde2)
+    }
+
+    .enl-form button:disabled {
+      opacity: .5;
+      cursor: not-allowed
+    }
+
+    .enl-search {
+      width: 100%;
+      padding: .55rem .85rem;
+      border: 1px solid #d9d3c6;
+      border-radius: 8px;
+      font: inherit;
+      font-size: .88rem;
+      margin-bottom: .8rem;
+      background: #fffdf8
+    }
+
+    .enl-search:focus {
+      outline: none;
+      border-color: var(--dorado);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(201, 160, 74, .15)
+    }
+
+    .enl-status {
+      font-size: .72rem;
+      color: var(--gris);
+      margin-bottom: .7rem
+    }
+
+    .enl-status.local { color: var(--dorado) }
+    .enl-status.saved { color: var(--ok) }
+    .enl-status.err   { color: var(--err) }
+
+    .enl-table {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff
+    }
+
+    .enl-row {
+      display: grid;
+      grid-template-columns: 180px 1fr auto;
+      gap: .6rem;
+      align-items: center;
+      padding: .55rem .7rem;
+      border-bottom: 1px solid #eee;
+      font-size: .86rem
+    }
+
+    .enl-row:last-child {
+      border-bottom: none
+    }
+
+    .enl-row.header {
+      background: #f5f0e8;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 700;
+      color: var(--verde)
+    }
+
+    .enl-nombre {
+      font-weight: 600;
+      color: var(--verde);
+      word-break: break-word
+    }
+
+    .enl-url {
+      color: var(--verde2);
+      text-decoration: underline;
+      word-break: break-all;
+      font-size: .82rem
+    }
+
+    .enl-url:hover {
+      color: var(--dorado)
+    }
+
+    .enl-row-actions {
+      display: flex;
+      gap: .3rem
+    }
+
+    .enl-ico-btn {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: var(--verde);
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .enl-ico-btn:hover {
+      background: #e6f2f1;
+      border-color: var(--verde)
+    }
+
+    .enl-ico-btn.danger {
+      color: var(--err)
+    }
+
+    .enl-ico-btn.danger:hover {
+      background: var(--err-bg);
+      border-color: var(--err)
+    }
+
+    .enl-empty {
+      text-align: center;
+      padding: 1.4rem .8rem;
+      color: var(--gris);
+      font-size: .88rem
+    }
+
+    @media (max-width: 560px) {
+      .enl-form {
+        grid-template-columns: 1fr
+      }
+      .enl-row {
+        grid-template-columns: 1fr;
+        gap: .3rem
+      }
+      .enl-row.header {
+        display: none
+      }
+      .enl-row-actions {
+        justify-content: flex-end
+      }
+    }
+
     .nav-bar {
       display: flex;
       justify-content: space-between;
@@ -1025,7 +1335,7 @@
     <div class="logo-area">
       <div class="logo-n">N</div>
       <div>
-        <span class="logo-text">NOrlexia</span>
+        <span class="logo-text">NOrlex</span>
         <span class="logo-sub">Legaltech · Test Abogacía</span>
       </div>
     </div>
@@ -1049,6 +1359,12 @@
         <span><strong>Cargar CSV</strong> — añade una nueva convocatoria</span>
       </div>
       <input type="file" id="fileInput" accept=".csv">
+
+      <div class="dash-tools">
+        <button type="button" class="tool-btn" onclick="abrirEnlaces()">
+          📖 <span>Códigos y leyes</span>
+        </button>
+      </div>
 
       <div id="matGridRoot"></div>
     </div>
@@ -1105,6 +1421,9 @@
           <div class="q-text" id="qText"></div>
           <div class="options" id="opts"></div>
           <div class="nota-wrap" id="qNotaWrap"></div>
+          <div class="nota-actions" style="margin-top:.1rem">
+            <button type="button" class="enl-link-btn" onclick="abrirEnlaces()">📖 Códigos y leyes</button>
+          </div>
           <div class="nav-bar">
             <div class="nav-l">
               <button class="btn btn-outline btn-sm" id="btnPrev" onclick="goPrev()">← Anterior</button>
@@ -1138,6 +1457,9 @@
           <div class="q-text" id="rqText"></div>
           <div class="options" id="rOpts"></div>
           <div class="nota-wrap" id="rqNotaWrap"></div>
+          <div class="nota-actions" style="margin-top:.1rem">
+            <button type="button" class="enl-link-btn" onclick="abrirEnlaces()">📖 Códigos y leyes</button>
+          </div>
           <div class="nav-bar">
             <div class="nav-l"></div>
             <div class="nav-r">
@@ -1177,9 +1499,29 @@
 
   </main>
 
+  <!-- ══ MODAL · CÓDIGOS Y LEYES ══ -->
+  <div class="modal-ov" id="enlModal" onclick="onEnlBackdrop(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div class="modal-title">📖 Códigos y leyes</div>
+        <button class="modal-close" onclick="cerrarEnlaces()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="enlStatus" class="enl-status local">Solo local</div>
+        <form class="enl-form" onsubmit="onEnlAdd(event)">
+          <input type="text" id="enlNombreIn" placeholder="Nombre (ej: LEC)" maxlength="80" required>
+          <input type="text" id="enlUrlIn" placeholder="https://www.boe.es/..." required>
+          <button type="submit">＋ Añadir</button>
+        </form>
+        <input type="text" class="enl-search" id="enlSearchIn" placeholder="🔎 Buscar por nombre..." oninput="renderEnlacesList()">
+        <div class="enl-table" id="enlTable"></div>
+      </div>
+    </div>
+  </div>
+
   <footer>
     <div class="ft-copy">
-      <div class="ft-n">N</div>© 2026 NOrlexia LEGALTECH
+      <div class="ft-n">N</div>© 2026 NOrlex LEGALTECH
     </div>
     <div class="ft-links">
       <a href="#">Aviso Legal</a>
@@ -1488,6 +1830,219 @@
       }
     }
 
+    // ══ ENLACES · Códigos y leyes (Supabase + localStorage fallback) ══
+    // Comparte el mismo cliente `sb` y credenciales que el módulo NOTAS.
+    // Tabla Supabase: public.enlaces (ver SUPABASE_SETUP_ENLACES.md)
+    //   nombre text primary key · url text not null · updated_at timestamptz
+    const ENLACES_LOCAL_KEY = "norlexia_enlaces_v1";
+    let enlacesCache = {};   // { nombre: url }
+    let _enlEditing = null;  // nombre en edición (o null)
+
+    function loadEnlacesLocal() {
+      try { return JSON.parse(localStorage.getItem(ENLACES_LOCAL_KEY) || "{}"); }
+      catch { return {}; }
+    }
+    function saveEnlacesLocal(obj) {
+      try { localStorage.setItem(ENLACES_LOCAL_KEY, JSON.stringify(obj)); } catch {}
+    }
+
+    async function initEnlaces() {
+      enlacesCache = loadEnlacesLocal();
+      if (sb) {
+        try {
+          const { data, error } = await sb.from("enlaces").select("nombre, url");
+          if (error) throw error;
+          if (data) {
+            data.forEach(r => { if (r.nombre && r.url) enlacesCache[r.nombre] = r.url; });
+            saveEnlacesLocal(enlacesCache);
+          }
+        } catch (e) {
+          console.warn("[Enlaces] Sin sincronización Supabase, modo local:", e.message || e);
+        }
+      }
+    }
+
+    function setEnlStatus(cls, txt) {
+      const el = document.getElementById("enlStatus");
+      if (!el) return;
+      el.className = "enl-status " + cls;
+      el.textContent = txt;
+    }
+
+    function normalizeUrl(u) {
+      let s = (u || "").trim();
+      if (!s) return "";
+      if (!/^https?:\/\//i.test(s) && !/^mailto:/i.test(s)) s = "https://" + s;
+      return s;
+    }
+
+    // Clave de índice de búsqueda (no es PK, solo para buscar case-insensitive)
+    function normName(n) {
+      return (n || "").toString().trim().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    async function guardarEnlace(nombreOriginal, nombreNuevo, url) {
+      const nombre = (nombreNuevo || "").trim();
+      const urlOk = normalizeUrl(url);
+      if (!nombre) { alert("El nombre no puede estar vacío."); return false; }
+      if (!urlOk) { alert("La URL no puede estar vacía."); return false; }
+
+      const esRenombrado = nombreOriginal && nombreOriginal !== nombre;
+      const existentes = Object.keys(enlacesCache);
+
+      if ((!nombreOriginal || esRenombrado) && existentes.some(n => normName(n) === normName(nombre))) {
+        alert('Ya existe un enlace con el nombre "' + nombre + '". Usa otro nombre o edita el existente.');
+        return false;
+      }
+
+      if (esRenombrado) {
+        delete enlacesCache[nombreOriginal];
+      }
+      enlacesCache[nombre] = urlOk;
+      saveEnlacesLocal(enlacesCache);
+
+      if (!sb) { setEnlStatus("local", "Guardado solo local"); return true; }
+
+      setEnlStatus("", "Guardando…");
+      try {
+        if (esRenombrado) {
+          const { error: errDel } = await sb.from("enlaces").delete().eq("nombre", nombreOriginal);
+          if (errDel) throw errDel;
+        }
+        const { error } = await sb.from("enlaces").upsert({
+          nombre: nombre, url: urlOk, updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        setEnlStatus("saved", "Sincronizado ✓");
+        return true;
+      } catch (e) {
+        console.warn("[Enlaces] Error sync:", e.message || e);
+        setEnlStatus("err", "Error sync · guardado local");
+        return true;
+      }
+    }
+
+    async function borrarEnlace(nombre) {
+      if (!confirm('¿Borrar el enlace "' + nombre + '"?')) return;
+      delete enlacesCache[nombre];
+      saveEnlacesLocal(enlacesCache);
+      renderEnlacesList();
+
+      if (!sb) { setEnlStatus("local", "Eliminado · solo local"); return; }
+      setEnlStatus("", "Borrando…");
+      try {
+        const { error } = await sb.from("enlaces").delete().eq("nombre", nombre);
+        if (error) throw error;
+        setEnlStatus("saved", "Eliminado ✓");
+      } catch (e) {
+        console.warn("[Enlaces] Error borrar:", e.message || e);
+        setEnlStatus("err", "Error sync · eliminado local");
+      }
+    }
+
+    function abrirEnlaces() {
+      _enlEditing = null;
+      const modal = document.getElementById("enlModal");
+      if (!modal) return;
+      modal.classList.add("active");
+      document.body.style.overflow = "hidden";
+      const nIn = document.getElementById("enlNombreIn");
+      const uIn = document.getElementById("enlUrlIn");
+      const sIn = document.getElementById("enlSearchIn");
+      if (nIn) nIn.value = "";
+      if (uIn) uIn.value = "";
+      if (sIn) sIn.value = "";
+      setEnlStatus(sb ? "saved" : "local", sb ? "Sincroniza con Supabase" : "Solo local");
+      renderEnlacesList();
+      setTimeout(() => { if (nIn) nIn.focus(); }, 50);
+    }
+
+    function cerrarEnlaces() {
+      const modal = document.getElementById("enlModal");
+      if (!modal) return;
+      modal.classList.remove("active");
+      document.body.style.overflow = "";
+      _enlEditing = null;
+    }
+
+    function onEnlBackdrop(e) {
+      if (e.target && e.target.id === "enlModal") cerrarEnlaces();
+    }
+
+    async function onEnlAdd(ev) {
+      ev.preventDefault();
+      const nIn = document.getElementById("enlNombreIn");
+      const uIn = document.getElementById("enlUrlIn");
+      if (!nIn || !uIn) return;
+      const ok = await guardarEnlace(_enlEditing, nIn.value, uIn.value);
+      if (ok) {
+        _enlEditing = null;
+        nIn.value = "";
+        uIn.value = "";
+        const btn = ev.target.querySelector('button[type="submit"]');
+        if (btn) btn.textContent = "＋ Añadir";
+        renderEnlacesList();
+        nIn.focus();
+      }
+    }
+
+    function editEnl(nombre) {
+      const nIn = document.getElementById("enlNombreIn");
+      const uIn = document.getElementById("enlUrlIn");
+      if (!nIn || !uIn) return;
+      _enlEditing = nombre;
+      nIn.value = nombre;
+      uIn.value = enlacesCache[nombre] || "";
+      const form = document.querySelector("#enlModal .enl-form");
+      const btn = form ? form.querySelector('button[type="submit"]') : null;
+      if (btn) btn.textContent = "💾 Guardar cambios";
+      nIn.focus();
+      nIn.setSelectionRange(nIn.value.length, nIn.value.length);
+    }
+
+    function renderEnlacesList() {
+      const tbl = document.getElementById("enlTable");
+      if (!tbl) return;
+      const qEl = document.getElementById("enlSearchIn");
+      const q = normName(qEl ? qEl.value : "");
+      const entries = Object.entries(enlacesCache)
+        .filter(([n]) => !q || normName(n).includes(q))
+        .sort((a, b) => a[0].localeCompare(b[0], "es", { sensitivity: "base" }));
+
+      if (!entries.length) {
+        tbl.innerHTML = '<div class="enl-empty">' +
+          (Object.keys(enlacesCache).length
+            ? "Ningún resultado para tu búsqueda."
+            : "Aún no has añadido enlaces. Introduce un nombre y pega la URL arriba.") +
+          '</div>';
+        return;
+      }
+
+      let html = '<div class="enl-row header"><div>Nombre</div><div>Enlace</div><div>Acciones</div></div>';
+      entries.forEach(([nombre, url]) => {
+        const safe = nombre.replace(/'/g, "\\'");
+        html +=
+          '<div class="enl-row">' +
+            '<div class="enl-nombre">' + escHtml(nombre) + '</div>' +
+            '<div><a class="enl-url" href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + escHtml(url) + '</a></div>' +
+            '<div class="enl-row-actions">' +
+              '<button type="button" class="enl-ico-btn" title="Editar" onclick="editEnl(\'' + safe + '\')">✏</button>' +
+              '<button type="button" class="enl-ico-btn danger" title="Borrar" onclick="borrarEnlace(\'' + safe + '\')">🗑</button>' +
+            '</div>' +
+          '</div>';
+      });
+      tbl.innerHTML = html;
+    }
+
+    // Cerrar modal con ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const m = document.getElementById("enlModal");
+        if (m && m.classList.contains("active")) cerrarEnlaces();
+      }
+    });
+
     // ══ STATE ══
     let examenes = [...EXAMENES];
     let selIdx = -1, mode = "completo";
@@ -1500,7 +2055,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("hdrDate").textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       document.getElementById("fileInput").addEventListener("change", loadCSV);
-      initNotas();
+      initNotas().then(() => initEnlaces());
       loadManifestCsvs().then(() => renderDash());
     });
 
