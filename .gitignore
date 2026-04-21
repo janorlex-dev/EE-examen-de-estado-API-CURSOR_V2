@@ -45,3 +45,7 @@ desktop.ini
 # Build / dist (por si en el futuro hay pipeline)
 /dist/
 /build/
+
+# Documentación y chats privados (no subir al repo público)
+/docs/
+/Chats/
