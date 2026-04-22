@@ -397,6 +397,134 @@
       letter-spacing: .04em
     }
 
+    /* ── Estado de progreso dentro del badge ── */
+    .badge-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+      flex-shrink: 0
+    }
+
+    .badge-dot.en-curso {
+      background: #f59e0b;
+      box-shadow: 0 0 0 1.5px #fff, 0 0 3px rgba(245, 158, 11, .7)
+    }
+
+    .badge-dot.finalizado {
+      background: #dc2626;
+      box-shadow: 0 0 0 1.5px #fff, 0 0 3px rgba(220, 38, 38, .7)
+    }
+
+    /* ── Franja "Seguir practicando" ── */
+    .seguir-bar {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1.5px solid #f59e0b;
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      margin: 0.8rem auto 1.1rem;
+      max-width: 1100px
+    }
+
+    .seguir-bar-title {
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: #92400e;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 0.45rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem
+    }
+
+    .seguir-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem
+    }
+
+    .seguir-item {
+      background: #fff;
+      border: 1.5px solid #f59e0b;
+      border-radius: 8px;
+      padding: 0.38rem 0.65rem;
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--texto);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all .15s
+    }
+
+    .seguir-item:hover {
+      background: #fef3c7;
+      border-color: #d97706
+    }
+
+    .seguir-item-prog {
+      font-size: 0.64rem;
+      color: #92400e;
+      background: #fef3c7;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600
+    }
+
+    /* ── Modal "Continuar / Empezar de nuevo" ── */
+    .prog-modal-ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 1rem
+    }
+
+    .prog-modal-ov.active {
+      display: flex
+    }
+
+    .prog-modal-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.3rem 1.4rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .35)
+    }
+
+    .prog-modal-title {
+      font-weight: 700;
+      color: var(--verde);
+      font-size: 1rem;
+      margin-bottom: 0.35rem
+    }
+
+    .prog-modal-sub {
+      color: var(--gris);
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      line-height: 1.45
+    }
+
+    .prog-modal-sub strong {
+      color: var(--texto)
+    }
+
+    .prog-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      justify-content: flex-end
+    }
+
     .show-more {
       font-size: 0.72rem;
       color: var(--gris);
@@ -1366,6 +1494,8 @@
         </button>
       </div>
 
+      <div id="seguirRoot"></div>
+
       <div id="matGridRoot"></div>
     </div>
 
@@ -1498,6 +1628,19 @@
     </div>
 
   </main>
+
+  <!-- ══ MODAL · PROGRESO (continuar / reiniciar) ══ -->
+  <div class="prog-modal-ov" id="progModal" onclick="onProgBackdrop(event)">
+    <div class="prog-modal-box" onclick="event.stopPropagation()">
+      <div class="prog-modal-title" id="progModalTitle">Examen en progreso</div>
+      <div class="prog-modal-sub" id="progModalSub"></div>
+      <div class="prog-modal-actions">
+        <button class="btn btn-outline btn-sm" onclick="cerrarProgresoModal()">Cancelar</button>
+        <button class="btn btn-danger btn-sm" onclick="accionReiniciarProgreso()">Empezar de nuevo</button>
+        <button class="btn btn-primary btn-sm" onclick="accionContinuarProgreso()">Continuar →</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══ MODAL · CÓDIGOS Y LEYES ══ -->
   <div class="modal-ov" id="enlModal" onclick="onEnlBackdrop(event)">
@@ -2040,8 +2183,255 @@
       if (e.key === "Escape") {
         const m = document.getElementById("enlModal");
         if (m && m.classList.contains("active")) cerrarEnlaces();
+        const pm = document.getElementById("progModal");
+        if (pm && pm.classList.contains("active")) cerrarProgresoModal();
       }
     });
+
+    // ══ PROGRESO · estados por examen (Supabase + localStorage fallback) ══
+    // Comparte cliente `sb` y credenciales con NOTAS/ENLACES.
+    // Tabla: public.progreso (ver SUPABASE_SETUP.md)
+    //   exam_id PK · estado ('en_curso'|'finalizado') · pregunta_actual · respuestas jsonb
+    //   · falladas jsonb · modo · origen_idxs jsonb · timer_total · timer_sec · updated_at
+    const PROGRESO_LOCAL_KEY = "norlexia_progreso_v1";
+    let progresoCache = {};  // { exam_id: {estado, ...} }
+    let _progSyncTimer = null;
+    let _progPendingSync = {}; // { exam_id: data | null } — null = delete
+
+    // Flag para saltarse la pantalla de config al continuar un examen
+    let _continuarDesde = null;  // idx examen | null
+    // idx examen elegido desde el modal (para botones del modal)
+    let _progModalTargetIdx = -1;
+
+    function examIdFromExam(ex) {
+      return slugify((ex && ex.name) || "");
+    }
+
+    function loadProgresoLocal() {
+      try { return JSON.parse(localStorage.getItem(PROGRESO_LOCAL_KEY) || "{}"); }
+      catch { return {}; }
+    }
+    function saveProgresoLocal(obj) {
+      try { localStorage.setItem(PROGRESO_LOCAL_KEY, JSON.stringify(obj)); } catch {}
+    }
+
+    async function initProgreso() {
+      progresoCache = loadProgresoLocal();
+      if (!sb) return;
+      try {
+        const { data, error } = await sb.from("progreso").select(
+          "exam_id, estado, pregunta_actual, respuestas, falladas, modo, origen_idxs, timer_total, timer_sec, updated_at"
+        );
+        if (error) throw error;
+        if (data) {
+          data.forEach(r => {
+            if (!r || !r.exam_id) return;
+            progresoCache[r.exam_id] = {
+              estado: r.estado,
+              preguntaActual: r.pregunta_actual || 0,
+              respuestas: r.respuestas || {},
+              falladas: r.falladas || [],
+              modo: r.modo || "completo",
+              origIdxs: r.origen_idxs || null,
+              timerTotal: r.timer_total || 0,
+              timerSec: r.timer_sec || 0,
+              updatedAt: r.updated_at
+            };
+          });
+          saveProgresoLocal(progresoCache);
+        }
+      } catch (e) {
+        console.warn("[Progreso] Sin sincronización Supabase, modo local:", e.message || e);
+      }
+    }
+
+    function getProgreso(examId) {
+      return progresoCache[examId] || null;
+    }
+
+    // Debounce: agrupa escrituras a Supabase para no saturar
+    function scheduleProgresoSync() {
+      if (_progSyncTimer) return;
+      _progSyncTimer = setTimeout(() => {
+        _progSyncTimer = null;
+        flushProgresoSync();
+      }, 900);
+    }
+
+    async function flushProgresoSync() {
+      if (!sb) return;
+      const pending = _progPendingSync;
+      _progPendingSync = {};
+      const entries = Object.entries(pending);
+      for (const [id, val] of entries) {
+        try {
+          if (val === null) {
+            const { error } = await sb.from("progreso").delete().eq("exam_id", id);
+            if (error) throw error;
+          } else {
+            const row = {
+              exam_id: id,
+              estado: val.estado,
+              pregunta_actual: val.preguntaActual || 0,
+              respuestas: val.respuestas || {},
+              falladas: val.falladas || [],
+              modo: val.modo || null,
+              origen_idxs: val.origIdxs || null,
+              timer_total: val.timerTotal || 0,
+              timer_sec: val.timerSec || 0,
+              updated_at: new Date().toISOString()
+            };
+            const { error } = await sb.from("progreso").upsert(row);
+            if (error) throw error;
+          }
+        } catch (e) {
+          console.warn("[Progreso] Error sync (" + id + "):", e.message || e);
+        }
+      }
+    }
+
+    function guardarProgreso(examId, data) {
+      if (!examId) return;
+      progresoCache[examId] = { ...data, updatedAt: new Date().toISOString() };
+      saveProgresoLocal(progresoCache);
+      _progPendingSync[examId] = progresoCache[examId];
+      scheduleProgresoSync();
+    }
+
+    function borrarProgreso(examId) {
+      if (!examId) return;
+      delete progresoCache[examId];
+      saveProgresoLocal(progresoCache);
+      _progPendingSync[examId] = null;
+      scheduleProgresoSync();
+    }
+
+    function marcarFinalizado(examId) {
+      if (!examId) return;
+      progresoCache[examId] = { estado: "finalizado", updatedAt: new Date().toISOString() };
+      saveProgresoLocal(progresoCache);
+      _progPendingSync[examId] = progresoCache[examId];
+      scheduleProgresoSync();
+    }
+
+    // Snapshot del estado actual del examen en curso → guarda progreso
+    function snapshotProgreso() {
+      if (selIdx < 0 || !questions || !questions.length) return;
+      const ex = examenes[selIdx];
+      if (!ex) return;
+      const id = examIdFromExam(ex);
+      guardarProgreso(id, {
+        estado: "en_curso",
+        preguntaActual: cur,
+        respuestas: { ...answered },
+        falladas: [...failedIdxs],
+        modo: mode,
+        origIdxs: questions.map(q => (q._origIdx == null ? 0 : q._origIdx)),
+        timerTotal: timerTotal,
+        timerSec: timerSec
+      });
+    }
+
+    // ── Modal continuar / reiniciar ──
+    function abrirProgresoModal(idx) {
+      const ex = examenes[idx]; if (!ex) return;
+      const p = getProgreso(examIdFromExam(ex));
+      if (!p || p.estado !== "en_curso") return;
+      _progModalTargetIdx = idx;
+      const total = (p.origIdxs && p.origIdxs.length) || ex.preguntas.length;
+      const actual = (p.preguntaActual || 0) + 1;
+      const pend = total - (actual - 1);
+      document.getElementById("progModalTitle").textContent = "🟡 Examen en progreso";
+      document.getElementById("progModalSub").innerHTML =
+        '<strong>' + escHtml(ex.name) + '</strong><br>' +
+        'Te quedaste en la pregunta ' + actual + ' de ' + total +
+        ' (' + pend + ' por contestar).';
+      const modal = document.getElementById("progModal");
+      modal.classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+
+    function cerrarProgresoModal() {
+      const modal = document.getElementById("progModal");
+      if (modal) modal.classList.remove("active");
+      document.body.style.overflow = "";
+      _progModalTargetIdx = -1;
+    }
+
+    function onProgBackdrop(e) {
+      if (e.target && e.target.id === "progModal") cerrarProgresoModal();
+    }
+
+    function accionContinuarProgreso() {
+      const idx = _progModalTargetIdx;
+      cerrarProgresoModal();
+      if (idx < 0) return;
+      continuarExamen(idx);
+    }
+
+    function accionReiniciarProgreso() {
+      const idx = _progModalTargetIdx;
+      cerrarProgresoModal();
+      if (idx < 0) return;
+      const ex = examenes[idx]; if (!ex) return;
+      borrarProgreso(examIdFromExam(ex));
+      renderDash();
+      selIdx = idx;
+      const s = matStyle(ex.materia);
+      document.getElementById("selLabel").textContent = `${ex.name} · ${ex.preguntas.length} preguntas`;
+      document.getElementById("modePanel").style.borderColor = s.border;
+      showScreen("screenConfig");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Reanuda un examen con el estado guardado (sin pasar por screenConfig)
+    function continuarExamen(idx) {
+      const ex = examenes[idx]; if (!ex) return;
+      const p = getProgreso(examIdFromExam(ex));
+      if (!p || p.estado !== "en_curso") { selectExam(idx); return; }
+
+      selIdx = idx;
+      mode = p.modo || "completo";
+
+      // Reconstruir questions en el MISMO orden en que se guardaron
+      const base = ex.preguntas.map((pp, i) => ({ ...pp, _origIdx: i }));
+      if (Array.isArray(p.origIdxs) && p.origIdxs.length) {
+        questions = p.origIdxs
+          .map(oi => base[oi])
+          .filter(q => !!q);
+        if (questions.length !== p.origIdxs.length) {
+          // CSV cambió: fallback a orden natural
+          questions = base;
+        }
+      } else {
+        questions = base;
+      }
+
+      answered = { ...(p.respuestas || {}) };
+      failedIdxs = Array.isArray(p.falladas) ? [...p.falladas] : [];
+      cur = Math.min(Math.max(p.preguntaActual || 0, 0), questions.length - 1);
+
+      // Recalcular contadores desde `answered` (por si hay inconsistencias)
+      okCnt = 0; errCnt = 0;
+      Object.keys(answered).forEach(k => {
+        const i = parseInt(k, 10);
+        const q = questions[i]; if (!q) return;
+        if (answered[k] === q.correcta) okCnt++;
+        else errCnt++;
+      });
+
+      timerTotal = p.timerTotal || 0;
+      timerSec = p.timerSec || 0;
+      // Fallback defensivo: si no hay tiempo guardado, 3h por defecto
+      if (!timerTotal || timerTotal <= 0) timerTotal = 3 * 3600;
+      if (!timerSec || timerSec <= 0) timerSec = timerTotal;
+
+      document.getElementById("examBloque").textContent = ex.name + " · continuación";
+      document.getElementById("btnExitHdr").style.display = "inline-block";
+      showScreen("screenExam");
+      renderQ();
+      startTimer();
+    }
 
     // ══ STATE ══
     let examenes = [...EXAMENES];
@@ -2055,7 +2445,10 @@
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("hdrDate").textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       document.getElementById("fileInput").addEventListener("change", loadCSV);
-      initNotas().then(() => initEnlaces());
+      initNotas()
+        .then(() => initEnlaces())
+        .then(() => initProgreso())
+        .then(() => { if (document.getElementById("screenDash").classList.contains("active")) renderDash(); });
       loadManifestCsvs().then(() => renderDash());
     });
 
@@ -2106,17 +2499,60 @@
       let html = `<div class="badges-row">`;
       sorted.forEach(e => {
         const lbl = examLabel(e);
+        const p = getProgreso(examIdFromExam(e));
+        let dot = "", tip = e.name + " · " + e.preguntas.length + " preguntas";
+        if (p && p.estado === "en_curso") {
+          dot = '<span class="badge-dot en-curso"></span>';
+          const pos = (p.preguntaActual || 0) + 1;
+          const tot = (p.origIdxs && p.origIdxs.length) || e.preguntas.length;
+          tip += " · En progreso (pregunta " + pos + "/" + tot + ")";
+        } else if (p && p.estado === "finalizado") {
+          dot = '<span class="badge-dot finalizado"></span>';
+          tip += " · Completado";
+        }
         html += `<span class="badge${e.nuevo ? " nuevo" : ""}" 
       style="background:${s.bg};color:${s.fg};border-color:${s.fg}30"
       onclick="selectExam(${e.idx})"
-      title="${escAttr(e.name + " · " + e.preguntas.length + " preguntas")}"
-    >${lbl}</span>`;
+      title="${escAttr(tip)}"
+    >${dot}${lbl}</span>`;
       });
       html += `</div>`;
       return html;
     }
 
+    function renderSeguirPracticando() {
+      const root = document.getElementById("seguirRoot");
+      if (!root) return;
+      const items = [];
+      examenes.forEach((e, i) => {
+        const p = getProgreso(examIdFromExam(e));
+        if (p && p.estado === "en_curso") {
+          items.push({ idx: i, ex: e, p: p, ts: p.updatedAt || "" });
+        }
+      });
+      if (!items.length) { root.innerHTML = ""; return; }
+
+      items.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+      const top = items.slice(0, 6);
+
+      let html = '<div class="seguir-bar">' +
+        '<div class="seguir-bar-title">🟡 Seguir practicando</div>' +
+        '<div class="seguir-items">';
+      top.forEach(it => {
+        const pos = (it.p.preguntaActual || 0) + 1;
+        const tot = (it.p.origIdxs && it.p.origIdxs.length) || it.ex.preguntas.length;
+        html += '<span class="seguir-item" onclick="selectExam(' + it.idx + ')" title="' +
+          escAttr(it.ex.name) + '">' +
+          escHtml(it.ex.name) +
+          '<span class="seguir-item-prog">' + pos + '/' + tot + '</span>' +
+          '</span>';
+      });
+      html += '</div></div>';
+      root.innerHTML = html;
+    }
+
     function renderDash() {
+      renderSeguirPracticando();
       const by = groupExamsByMateria();
       const root = document.getElementById("matGridRoot");
       if (!root) return;
@@ -2141,8 +2577,22 @@
     }
 
     function selectExam(i) {
-      selIdx = i;
       const e = examenes[i];
+      if (!e) return;
+      const id = examIdFromExam(e);
+      const p = getProgreso(id);
+
+      // En progreso → modal Continuar / Empezar de nuevo
+      if (p && p.estado === "en_curso") {
+        abrirProgresoModal(i);
+        return;
+      }
+      // Finalizado → se reinicia sin preguntar (el dot rojo ya es la pista visual)
+      if (p && p.estado === "finalizado") {
+        borrarProgreso(id);
+      }
+
+      selIdx = i;
       const s = matStyle(e.materia);
       document.getElementById("selLabel").textContent = `${e.name} · ${e.preguntas.length} preguntas`;
       document.getElementById("modePanel").style.borderColor = s.border;
@@ -2311,18 +2761,24 @@
       if (l === questions[cur].correcta) okCnt++;
       else { errCnt++; if (!failedIdxs.includes(cur)) failedIdxs.push(cur); }
       renderQ();
+      snapshotProgreso();
     }
     function repeatQ() {
       const p = answered[cur];
       if (p && p !== questions[cur].correcta && !failedIdxs.includes(cur)) failedIdxs.push(cur);
       delete answered[cur]; renderQ();
+      snapshotProgreso();
     }
-    function goNext() { if (cur < questions.length - 1) { cur++; renderQ(); } }
-    function goPrev() { if (cur > 0) { cur--; renderQ(); } }
+    function goNext() { if (cur < questions.length - 1) { cur++; renderQ(); snapshotProgreso(); } }
+    function goPrev() { if (cur > 0) { cur--; renderQ(); snapshotProgreso(); } }
 
     // ══ FINISH ══
     function finishExam() {
       clearInterval(timerInt);
+      // Marcar el examen como finalizado (borra el progreso en_curso)
+      if (selIdx >= 0 && examenes[selIdx]) {
+        marcarFinalizado(examIdFromExam(examenes[selIdx]));
+      }
       if (failedIdxs.length > 0) {
         if (confirm(`Tienes ${failedIdxs.length} pregunta(s) fallada(s).\n¿Repasar antes de ver resultados?`)) { startRepaso(); return; }
       }
@@ -2389,7 +2845,15 @@
 
     // ══ NAV ══
     function showScreen(id) { document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); document.getElementById(id).classList.add("active"); }
-    function showDash() { clearInterval(timerInt); document.getElementById("btnExitHdr").style.display = "none"; showScreen("screenDash"); renderDash(); }
+    function showDash() {
+      // Si veníamos de un examen activo, guarda el estado para poder continuar
+      const inExam = document.getElementById("screenExam").classList.contains("active");
+      if (inExam) snapshotProgreso();
+      clearInterval(timerInt);
+      document.getElementById("btnExitHdr").style.display = "none";
+      showScreen("screenDash");
+      renderDash();
+    }
   </script>
 </body>
 

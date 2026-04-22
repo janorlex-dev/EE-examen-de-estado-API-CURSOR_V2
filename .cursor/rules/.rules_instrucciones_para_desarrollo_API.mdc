@@ -405,3 +405,214 @@ Credenciales en `index.html`
 ·	¿Evita exponer la `service_role` key?
 ·	¿Añade/actualiza `SUPABASE_SETUP.md` si cambia el esquema?
 
+---
+
+## FUNCIONALIDAD — SEGUIMIENTO DE EXÁMENES (PROGRESO, v1, implementada)
+
+Objetivo: permitir al usuario saber de un vistazo qué exámenes tiene
+pendientes, a medias o terminados, y poder retomar los empezados en la
+misma pregunta donde los dejó. Sincronizado entre PC y móvil.
+
+### Alcance (lo que NO se guarda)
+
+·	No se cuenta el número de intentos.
+·	No se guarda fecha del último intento, ni duración, ni porcentaje.
+·	No hay pantalla de historial ni estadísticas.
+·	Cuando un examen se reinicia, se BORRA todo el progreso anterior
+	(respuestas, falladas, timer).
+
+### Estados y flujo UX (obligatorio mantener)
+
+Cada examen tiene exactamente uno de estos tres estados:
+
+1.	NO EMPEZADO → badge del año SIN dot. Click abre pantalla de
+	configuración normal (`screenConfig`).
+2.	EN PROGRESO → 🟡 dot amarillo en el badge del año + franja
+	"Seguir practicando" arriba del dashboard. Click abre modal con
+	dos opciones:
+	·	`Continuar →` retoma en la pregunta guardada, con las
+		respuestas/errores previos y el tiempo restante del cronómetro.
+	·	`Empezar de nuevo` borra el progreso y abre la configuración.
+3.	FINALIZADO → 🔴 dot rojo en el badge del año. Click entra DIRECTO
+	a la pantalla de configuración sin preguntar (se borra el estado
+	finalizado en ese momento). El dot rojo es la única pista visual.
+
+Transiciones:
+
+·	No empezado → En progreso: al responder / navegar dentro del examen.
+·	En progreso → Finalizado: al pulsar `Finalizar ✓` (incluye timeout).
+·	En progreso → No empezado: al elegir `Empezar de nuevo` en el modal.
+·	Finalizado → No empezado: al clicar el badge rojo (reinicia directo).
+
+### Identificador estable de cada examen
+
+Clave: `examId = slugify(ex.name)`
+
+Ejemplos
+·	`materias_comunes_2025.2`
+·	`laboral_2024.1`
+·	`civil_2025.1`
+
+Reglas
+·	Se deriva SIEMPRE de `ex.name`, nunca del `sourceFile` ni del label.
+·	Si se renombra un CSV en `CSV_MANIFEST`, el progreso previo queda
+	huérfano (misma política que las notas). Si hay que renombrar en
+	producción, proveer migración SQL que actualice `exam_id`.
+
+### Arquitectura de datos
+
+Capas (idénticas a NOTAS y ENLACES, en orden de prioridad)
+1.	`progresoCache` → objeto en memoria, fuente de verdad durante la
+	sesión. `{ exam_id: { estado, preguntaActual, respuestas, ... } }`.
+2.	`localStorage["norlexia_progreso_v1"]` → espejo JSON, respaldo
+	offline y arranque rápido.
+3.	Supabase tabla `public.progreso` → sincronización entre PC y móvil.
+
+Orden de escritura (en `guardarProgreso` / `marcarFinalizado` /
+`borrarProgreso`)
+1.	Actualizar `progresoCache` (síncrono).
+2.	Persistir `localStorage` (síncrono).
+3.	Encolar en `_progPendingSync` y lanzar `scheduleProgresoSync()`
+	con DEBOUNCE de ~900 ms, que agrupa varias escrituras seguidas en
+	un único `upsert` por examen (evita saturar Supabase cuando el
+	usuario responde rápido).
+
+Orden de lectura (en `initProgreso` al arrancar)
+1.	Cargar `localStorage` → `progresoCache`.
+2.	Si hay cliente Supabase (`sb`), descargar todas las filas y
+	sobreescribir la cache (Supabase prevalece).
+3.	Persistir el resultado fusionado en `localStorage`.
+4.	Re-renderizar el dashboard si ya estaba visible (para pintar los
+	dots que llegaron de Supabase tras el render inicial).
+
+### Esquema Supabase
+
+Tabla `public.progreso`:
+·	`exam_id         text primary key`
+·	`estado          text check (estado in ('en_curso','finalizado'))`
+·	`pregunta_actual int default 0`
+·	`respuestas      jsonb default '{}'::jsonb`
+·	`falladas        jsonb default '[]'::jsonb`
+·	`modo            text` — `'completo'` | `'aleatorio'`
+·	`origen_idxs     jsonb default '[]'::jsonb` — orden de las
+	preguntas respecto al CSV original (imprescindible para reconstruir
+	tests aleatorios al continuar)
+·	`timer_total     int default 0`
+·	`timer_sec       int default 0`
+·	`updated_at      timestamptz default now()`
+
+RLS activado. Políticas abiertas (`using (true)` / `with check (true)`)
+para el MVP sin login. Cuando se añada autenticación, añadir columna
+`user_id uuid` con FK a `auth.users`, cambiar PK a `(user_id, exam_id)`
+y sustituir políticas por `using (auth.uid() = user_id)`.
+
+Credenciales: las mismas `SUPABASE_URL` / `SUPABASE_KEY` que notas y
+enlaces. El cliente `sb` se reutiliza (no se crea uno nuevo).
+
+### Estado guardado del examen en curso
+
+Un snapshot completo contiene todo lo necesario para reconstruir la
+sesión exacta al continuar:
+
+·	`preguntaActual`: índice 0-based en el array `questions` actual.
+·	`respuestas`: `{ "0": "a", "1": "c", ... }` por índice de test.
+·	`falladas`: array de índices marcados como error.
+·	`modo`: para mostrar el nombre del modo si se quisiera.
+·	`origIdxs`: array con el `_origIdx` de cada question en el orden
+	actual. CRÍTICO en modo aleatorio para reconstruir el mismo orden
+	al continuar. En modo completo coincide con `[0,1,2,...,N-1]`.
+·	`timerTotal`, `timerSec`: para retomar la cuenta atrás donde se
+	pausó. Fallback defensivo a 3h si faltan (datos antiguos).
+
+Al continuar (`continuarExamen(idx)`):
+1.	Reconstruir `questions` mapeando cada `origIdx` contra
+	`ex.preguntas.map((p,i)=>({...p,_origIdx:i}))`.
+2.	Si el tamaño no coincide (CSV cambió), fallback a orden natural.
+3.	Recalcular `okCnt`/`errCnt` desde `answered` (por si hay
+	inconsistencias).
+4.	Saltar DIRECTO a `screenExam`, sin pasar por `screenConfig`.
+
+### Puntos de enganche en `index.html`
+
+·	`DOMContentLoaded` → `initNotas().then(initEnlaces).then(initProgreso)
+	.then(re-render dash si activo)`.
+·	`selectExam(i)` → si `en_curso` abre modal y RETURN; si `finalizado`
+	borra la fila y continúa a `screenConfig`.
+·	`answer()`, `repeatQ()`, `goNext()`, `goPrev()` → `snapshotProgreso()`
+	tras cada cambio (el debounce de Supabase evita saturación).
+·	`showDash()` → si venías de `screenExam`, `snapshotProgreso()`
+	antes de salir para no perder segundos de timer.
+·	`finishExam()` → `marcarFinalizado(examIdFromExam(ex))` ANTES del
+	confirm de repaso (así si finaliza por timeout o decide no repasar,
+	el estado ya está actualizado).
+·	`renderDash()` → `renderSeguirPracticando()` + `examButtonsHTML()`
+	consulta `getProgreso(examId)` para pintar los dots.
+
+### Render del dashboard
+
+Dos piezas visuales:
+
+1.	Dots en los badges de año: `<span class="badge-dot en-curso">` o
+	`<span class="badge-dot finalizado">` inyectado ANTES del label
+	dentro del `.badge`. Sin dot si no hay progreso.
+2.	Franja "Seguir practicando" en `<div id="seguirRoot">` arriba del
+	grid: solo aparece si hay al menos un examen `en_curso`. Lista
+	hasta 6 items ordenados por `updated_at` descendente, con el
+	formato `{nombre} {pos}/{total}`.
+
+### Separación secretos / repo
+
+Idéntico a NOTAS y ENLACES: las credenciales Supabase van en
+`index.html` (publishable key, protegida por RLS). La `service_role`
+nunca va al frontend.
+
+### Reglas para futuras modificaciones
+
+·	Respetar los tres estados UX sin añadir más ni menos. Si el usuario
+	pide "ver último intento" o "contar intentos", es una evolución a
+	un módulo HISTORIAL separado, NO se acumula en la tabla `progreso`.
+·	Toda escritura pasa por `guardarProgreso` / `marcarFinalizado` /
+	`borrarProgreso`. Nunca tocar `progresoCache` ni `localStorage`
+	directamente desde la UI.
+·	Toda lectura pasa por `getProgreso(examId)`. Nunca consultar
+	Supabase síncronamente desde el render del dashboard.
+·	Mantener el DEBOUNCE de `scheduleProgresoSync`. Cada respuesta del
+	usuario dispara una escritura; sin debounce se saturan las peticiones.
+·	Al añadir multiusuario, añadir `user_id` a la tabla, cambiar la PK a
+	`(user_id, exam_id)` y filtrar por `auth.uid()`. La API
+	`guardarProgreso(examId, data)` se mantiene igual.
+·	Si se cambia `origen_idxs` por otra estructura (p.ej. para modo por
+	bloques con subconjuntos), asegurarse de que `continuarExamen()`
+	sabe reconstruir `questions` contra el CSV vigente, con fallback
+	seguro a orden natural.
+·	La sección de "Seguir practicando" NO debe mostrar detalles de
+	tiempo, fecha ni porcentaje. Solo nombre del examen y `pos/total`.
+
+### Archivos implicados
+
+·	`index.html` → módulo PROGRESO (cache, init, guardar, borrar,
+	finalizar, snapshot, continuar, modal), CSS de `.badge-dot`,
+	`.seguir-*`, `.prog-modal-*`, contenedores
+	`<div id="seguirRoot">` y `<div id="progModal">`.
+·	`SUPABASE_SETUP_PROGRESO.md` → guía paso a paso para crear la tabla
+	`progreso` en el mismo proyecto Supabase que notas y enlaces.
+
+### Checklist para el agente al tocar este módulo
+
+·	¿Respeta los 3 estados (no empezado / en curso / finalizado) sin
+	añadir variantes intermedias?
+·	¿El ID es `slugify(ex.name)` y se deriva siempre de ahí?
+·	¿`origen_idxs` se guarda y se usa para reconstruir `questions` al
+	continuar (especialmente en modo aleatorio)?
+·	¿Toda escritura pasa por `guardarProgreso` / `marcarFinalizado` /
+	`borrarProgreso` y toda lectura por `getProgreso`?
+·	¿Se mantiene el debounce de sincronización Supabase (~900 ms)?
+·	¿Funciona sin credenciales Supabase (modo solo `localStorage`)?
+·	¿`finishExam` llama a `marcarFinalizado` ANTES del confirm de
+	repaso?
+·	¿`showDash` hace `snapshotProgreso` si venía de `screenExam`?
+·	¿El modal de "continuar/empezar de nuevo" aparece SOLO con estado
+	`en_curso`, y el estado `finalizado` entra directo sin preguntar?
+·	¿Se evita exponer la `service_role` key?
+·	¿Añade/actualiza `SUPABASE_SETUP_PROGRESO.md` si cambia el esquema?
+
