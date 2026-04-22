@@ -615,3 +615,129 @@ nunca va al frontend.
 ·	¿Se evita exponer la `service_role` key?
 ·	¿Añade/actualiza `SUPABASE_SETUP_PROGRESO.md` si cambia el esquema?
 
+---
+
+## FUNCIONALIDAD — ENLACES (CÓDIGOS Y LEYES, v1, implementada)
+
+Objetivo: permitir al usuario guardar enlaces externos (BOE, leyes, PDFs
+de Supabase Storage, etc.) accesibles desde el dashboard, persistentes
+entre PC y móvil. Incluye el módulo y un parche concreto para que los
+PDFs alojados en Supabase Storage **se abran inline en Android** en
+lugar de descargarse.
+
+### Flujo UX (obligatorio mantener)
+
+1.	Botón `📖 Códigos y leyes` en el dashboard abre un modal con:
+	·	Buscador por nombre.
+	·	Formulario para añadir / editar (nombre + URL).
+	·	Lista en tabla con columnas Nombre · Enlace · Acciones
+		(✏ Editar / 🗑 Borrar).
+2.	Cada fila muestra la URL **tal cual la guardó el usuario** (texto
+	visible = URL original de Supabase u origen). Solo el `href` puede
+	transformarse para mejorar la UX en móvil (ver “Visor PDF” abajo).
+3.	Los enlaces se abren siempre con `target="_blank"` y
+	`rel="noopener noreferrer"`. No abrir nunca en la misma pestaña.
+4.	El listado se ordena alfabéticamente, insensible a mayúsculas y
+	acentos (`localeCompare("es", { sensitivity: "base" })`).
+
+### Visor PDF en móvil (parche obligatorio)
+
+Problema: Chrome para Android no tiene visor PDF nativo y al recibir
+una URL `.pdf` la **descarga** en vez de mostrarla. En escritorio
+funciona inline porque navegadores y SO traen visor integrado.
+
+Solución implementada (no hardcodear, no ensuciar la URL guardada):
+
+·	Helper `esMovil()` — detecta `Android|iPhone|iPad|iPod|Mobile`
+	en `navigator.userAgent`.
+·	Helper `urlParaAbrir(url)` — si la URL acaba en `.pdf` (con o sin
+	query string) **y** `esMovil()` es `true`, devuelve la URL
+	envuelta en el visor público de Google Docs:
+	`https://docs.google.com/gview?embedded=true&url=` + `encodeURIComponent(url)`.
+	En cualquier otro caso (escritorio, o URL que no es PDF) devuelve
+	la URL sin tocar.
+·	El render de la lista usa `escAttr(urlParaAbrir(url))` en el
+	atributo `href`, pero mantiene `escHtml(url)` en el texto visible.
+	Así el usuario sigue viendo la URL original.
+
+Reglas duras
+·	**Nunca** modificar la URL guardada en `enlacesCache` ni en la tabla
+	`public.enlaces`. La transformación es solo de presentación, en el
+	momento del render.
+·	**Nunca** aplicar el visor de Google a URLs que no son PDF (rompería
+	enlaces normales como BOE).
+·	**Nunca** aplicar el visor en escritorio (es más lento y peor UX
+	cuando el navegador ya sabe abrir PDFs nativos).
+·	Si en el futuro se sustituye el visor de Google por otro (p.ej.
+	PDF.js auto-hospedado), el cambio debe estar contenido en
+	`urlParaAbrir()` — ningún otro punto del código debería conocer la
+	existencia del visor.
+
+### Arquitectura de datos
+
+Capas (en orden de prioridad al leer/escribir)
+1.	`enlacesCache` → objeto `{ nombre: url }` en memoria, fuente de
+	verdad durante la sesión.
+2.	`localStorage["norlexia_enlaces_v1"]` → espejo JSON, respaldo
+	offline.
+3.	Supabase tabla `public.enlaces` → sincronización entre dispositivos.
+
+API pública del módulo
+·	`initEnlaces()` — carga local + descarga Supabase + fusión.
+·	`guardarEnlace(nombre, url, nombreOriginal)` — alta o renombrado.
+·	`borrarEnlace(nombre)` — eliminación.
+·	`renderEnlacesList()` — repinta la tabla.
+
+Toda escritura pasa por `guardarEnlace` / `borrarEnlace`. Ninguna parte
+del render debe escribir directamente en `enlacesCache` ni en
+`localStorage`.
+
+### Esquema Supabase
+
+Tabla `public.enlaces`:
+·	`nombre text primary key`
+·	`url text not null`
+·	`updated_at timestamptz not null default now()`
+
+RLS activado, políticas abiertas para el MVP sin login. Cuando se
+añada multiusuario, sustituir por filtros `auth.uid() = user_id` y
+añadir columna `user_id` (mismo patrón que NOTAS y PROGRESO).
+
+### Almacenamiento de PDFs (Supabase Storage)
+
+·	Bucket recomendado: `examenes-pdf` (o similar), **público**, MIME
+	restringido a `application/pdf`.
+·	URL pública canónica:
+	`https://<PROYECTO>.supabase.co/storage/v1/object/public/<BUCKET>/<archivo>.pdf`
+·	Esa URL es la que el usuario pega en el formulario de
+	“Códigos y leyes”. No reescribirla automáticamente al guardar.
+·	Ver `Chats/subir PDF  a SUPABASE.md` para el procedimiento de subida
+	manual (Storage → Upload → Get URL).
+
+### Archivos implicados
+
+·	`index.html` → módulo ENLACES (config, cache, init, guardar,
+	borrar, render, helpers `esMovil` / `urlParaAbrir`), CSS de
+	`.enl-*`, modal `<div id="enlModal">`, botón en dashboard.
+·	`SUPABASE_SETUP_ENLACES.md` → guía paso a paso para crear la tabla
+	`enlaces` y configurar credenciales.
+·	`Chats/subir PDF  a SUPABASE.md` → notas sobre Supabase Storage
+	para los PDFs originales de los exámenes.
+
+### Checklist para el agente al tocar este módulo
+
+·	¿La URL guardada en cache / Supabase / `localStorage` se mantiene
+	exactamente como la pegó el usuario, sin envolverla en ningún
+	visor?
+·	¿La transformación con `urlParaAbrir()` ocurre **solo** en el
+	atributo `href` del render, nunca al guardar?
+·	¿Se aplica el visor **solo** a URLs `.pdf` y **solo** en móvil?
+·	¿Los enlaces se abren con `target="_blank"` + `rel="noopener noreferrer"`?
+·	¿El texto visible del enlace sigue mostrando la URL original
+	(`escHtml(url)`), no la envuelta?
+·	¿Toda escritura pasa por `guardarEnlace` / `borrarEnlace` y toda
+	lectura por `enlacesCache`?
+·	¿Funciona sin credenciales Supabase (modo solo `localStorage`)?
+·	¿Se evita exponer la `service_role` key?
+·	¿Añade/actualiza `SUPABASE_SETUP_ENLACES.md` si cambia el esquema?
+

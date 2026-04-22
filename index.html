@@ -917,8 +917,15 @@
     }
 
     @keyframes notaIn {
-      from { opacity: 0; transform: translateY(-4px) }
-      to   { opacity: 1; transform: translateY(0) }
+      from {
+        opacity: 0;
+        transform: translateY(-4px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
     }
 
     .nota-head {
@@ -955,10 +962,21 @@
       color: var(--gris)
     }
 
-    .nota-status.saving { color: var(--gris) }
-    .nota-status.saved  { color: var(--ok) }
-    .nota-status.local  { color: var(--dorado) }
-    .nota-status.err    { color: var(--err) }
+    .nota-status.saving {
+      color: var(--gris)
+    }
+
+    .nota-status.saved {
+      color: var(--ok)
+    }
+
+    .nota-status.local {
+      color: var(--dorado)
+    }
+
+    .nota-status.err {
+      color: var(--err)
+    }
 
     .nota-ta {
       width: 100%;
@@ -1086,8 +1104,13 @@
     }
 
     @keyframes modalFade {
-      from { opacity: 0 }
-      to   { opacity: 1 }
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
     }
 
     .modal-box {
@@ -1101,8 +1124,15 @@
     }
 
     @keyframes modalIn {
-      from { opacity: 0; transform: translateY(-12px) scale(.98) }
-      to   { opacity: 1; transform: translateY(0) scale(1) }
+      from {
+        opacity: 0;
+        transform: translateY(-12px) scale(.98)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1)
+      }
     }
 
     .modal-head {
@@ -1213,9 +1243,17 @@
       margin-bottom: .7rem
     }
 
-    .enl-status.local { color: var(--dorado) }
-    .enl-status.saved { color: var(--ok) }
-    .enl-status.err   { color: var(--err) }
+    .enl-status.local {
+      color: var(--dorado)
+    }
+
+    .enl-status.saved {
+      color: var(--ok)
+    }
+
+    .enl-status.err {
+      color: var(--err)
+    }
 
     .enl-table {
       border: 1px solid #e5e5e5;
@@ -1309,13 +1347,16 @@
       .enl-form {
         grid-template-columns: 1fr
       }
+
       .enl-row {
         grid-template-columns: 1fr;
         gap: .3rem
       }
+
       .enl-row.header {
         display: none
       }
+
       .enl-row-actions {
         justify-content: flex-end
       }
@@ -1624,7 +1665,8 @@
           <input type="text" id="enlUrlIn" placeholder="https://www.boe.es/..." required>
           <button type="submit">＋ Añadir</button>
         </form>
-        <input type="text" class="enl-search" id="enlSearchIn" placeholder="🔎 Buscar por nombre..." oninput="renderEnlacesList()">
+        <input type="text" class="enl-search" id="enlSearchIn" placeholder="🔎 Buscar por nombre..."
+          oninput="renderEnlacesList()">
         <div class="enl-table" id="enlTable"></div>
       </div>
     </div>
@@ -1780,7 +1822,7 @@
       catch { return {}; }
     }
     function saveNotasLocal(obj) {
-      try { localStorage.setItem(NOTAS_LOCAL_KEY, JSON.stringify(obj)); } catch {}
+      try { localStorage.setItem(NOTAS_LOCAL_KEY, JSON.stringify(obj)); } catch { }
     }
 
     async function initNotas() {
@@ -1908,14 +1950,14 @@
         const modeCls = sb ? "saved" : "local";
         wrap.innerHTML =
           '<div class="nota-head">' +
-            '<span>📝 ' + (prev ? "Editar nota" : "Nueva nota") +
-              '<span class="nota-id">' + id + '</span></span>' +
-            '<span class="nota-status ' + modeCls + '" data-id="' + id + '">' + modeTxt + '</span>' +
+          '<span>📝 ' + (prev ? "Editar nota" : "Nueva nota") +
+          '<span class="nota-id">' + id + '</span></span>' +
+          '<span class="nota-status ' + modeCls + '" data-id="' + id + '">' + modeTxt + '</span>' +
           '</div>' +
           '<textarea class="nota-ta" ' +
-            'placeholder="Escribe aquí tu nota. Se guarda al salir del campo." ' +
-            'onblur="guardarNota(\'' + safeId + '\', this.value); cerrarEditNota(\'' + safeId + '\')"' +
-            '>' + escHtml(prev) + '</textarea>';
+          'placeholder="Escribe aquí tu nota. Se guarda al salir del campo." ' +
+          'onblur="guardarNota(\'' + safeId + '\', this.value); cerrarEditNota(\'' + safeId + '\')"' +
+          '>' + escHtml(prev) + '</textarea>';
         const ta = wrap.querySelector('.nota-ta');
         if (ta) { setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0); }
         return;
@@ -1925,12 +1967,12 @@
         wrap.innerHTML =
           '<div class="nota-aviso"><strong>📝 Nota:</strong> ' + escHtml(prev) + '</div>' +
           '<div class="nota-actions">' +
-            '<button type="button" class="nota-link" onclick="abrirEditNota(\'' + safeId + '\')">✏ Editar nota</button>' +
+          '<button type="button" class="nota-link" onclick="abrirEditNota(\'' + safeId + '\')">✏ Editar nota</button>' +
           '</div>';
       } else {
         wrap.innerHTML =
           '<div class="nota-actions">' +
-            '<button type="button" class="nota-link" onclick="abrirEditNota(\'' + safeId + '\')">➕ Añadir nota</button>' +
+          '<button type="button" class="nota-link" onclick="abrirEditNota(\'' + safeId + '\')">➕ Añadir nota</button>' +
           '</div>';
       }
     }
@@ -1948,7 +1990,7 @@
       catch { return {}; }
     }
     function saveEnlacesLocal(obj) {
-      try { localStorage.setItem(ENLACES_LOCAL_KEY, JSON.stringify(obj)); } catch {}
+      try { localStorage.setItem(ENLACES_LOCAL_KEY, JSON.stringify(obj)); } catch { }
     }
 
     async function initEnlaces() {
@@ -2106,6 +2148,23 @@
       nIn.setSelectionRange(nIn.value.length, nIn.value.length);
     }
 
+    // En Android Chrome los PDFs se descargan en vez de abrirse inline.
+    // Si es móvil y la URL apunta a un .pdf, lo envolvemos con el visor de
+    // Google Docs para que se vea dentro del navegador. En escritorio se
+    // mantiene la URL directa (más rápida, sin intermediarios).
+    function esMovil() {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    }
+
+    function urlParaAbrir(url) {
+      if (!url) return url;
+      const esPdf = /\.pdf($|\?)/i.test(url);
+      if (esPdf && esMovil()) {
+        return 'https://docs.google.com/gview?embedded=true&url=' + encodeURIComponent(url);
+      }
+      return url;
+    }
+
     function renderEnlacesList() {
       const tbl = document.getElementById("enlTable");
       if (!tbl) return;
@@ -2129,12 +2188,12 @@
         const safe = nombre.replace(/'/g, "\\'");
         html +=
           '<div class="enl-row">' +
-            '<div class="enl-nombre">' + escHtml(nombre) + '</div>' +
-            '<div><a class="enl-url" href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + escHtml(url) + '</a></div>' +
-            '<div class="enl-row-actions">' +
-              '<button type="button" class="enl-ico-btn" title="Editar" onclick="editEnl(\'' + safe + '\')">✏</button>' +
-              '<button type="button" class="enl-ico-btn danger" title="Borrar" onclick="borrarEnlace(\'' + safe + '\')">🗑</button>' +
-            '</div>' +
+          '<div class="enl-nombre">' + escHtml(nombre) + '</div>' +
+          '<div><a class="enl-url" href="' + escAttr(urlParaAbrir(url)) + '" target="_blank" rel="noopener noreferrer">' + escHtml(url) + '</a></div>' +
+          '<div class="enl-row-actions">' +
+          '<button type="button" class="enl-ico-btn" title="Editar" onclick="editEnl(\'' + safe + '\')">✏</button>' +
+          '<button type="button" class="enl-ico-btn danger" title="Borrar" onclick="borrarEnlace(\'' + safe + '\')">🗑</button>' +
+          '</div>' +
           '</div>';
       });
       tbl.innerHTML = html;
@@ -2174,7 +2233,7 @@
       catch { return {}; }
     }
     function saveProgresoLocal(obj) {
-      try { localStorage.setItem(PROGRESO_LOCAL_KEY, JSON.stringify(obj)); } catch {}
+      try { localStorage.setItem(PROGRESO_LOCAL_KEY, JSON.stringify(obj)); } catch { }
     }
 
     async function initProgreso() {
@@ -2730,7 +2789,7 @@
         const target = (btnFin && btnFin.style.display !== "none") ? btnFin : btnNext;
         if (target) {
           try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
-          try { target.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
+          try { target.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) { }
         }
       }, 0);
     }
