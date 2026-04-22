@@ -1405,38 +1405,6 @@
       font-weight: 500
     }
 
-    /* ZOOM */
-    .zoom-ctl {
-      position: fixed;
-      bottom: 3.2rem;
-      right: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      background: var(--verde);
-      padding: 0.32rem 0.5rem;
-      border-radius: 20px;
-      z-index: 200;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .25)
-    }
-
-    .zoom-ctl button {
-      background: transparent;
-      border: none;
-      color: var(--dorado);
-      cursor: pointer;
-      font-size: 0.95rem;
-      padding: 0 2px;
-      line-height: 1
-    }
-
-    .zoom-v {
-      color: var(--crema);
-      font-size: 0.68rem;
-      min-width: 28px;
-      text-align: center
-    }
-
     #fileInput {
       display: none
     }
@@ -1672,12 +1640,6 @@
       <a href="#">Cookies</a>
     </div>
   </footer>
-
-  <div class="zoom-ctl">
-    <button onclick="chgZoom(-10)">−</button>
-    <span class="zoom-v" id="zoomV">100%</span>
-    <button onclick="chgZoom(10)">＋</button>
-  </div>
 
   <script>
     // ══ DATOS ══
@@ -2439,7 +2401,6 @@
     let timerInt = null, timerSec = 0, timerTotal = 0;
     let questions = [], cur = 0, answered = {}, failedIdxs = [], okCnt = 0, errCnt = 0;
     let repasoQs = [], repasoCur = 0;
-    let zoom = 100;
 
     // ══ INIT ══
     document.addEventListener("DOMContentLoaded", () => {
@@ -2451,9 +2412,6 @@
         .then(() => { if (document.getElementById("screenDash").classList.contains("active")) renderDash(); });
       loadManifestCsvs().then(() => renderDash());
     });
-
-    // ══ ZOOM ══
-    function chgZoom(d) { zoom = Math.min(150, Math.max(70, zoom + d)); document.body.style.fontSize = (zoom / 100) + "rem"; document.getElementById("zoomV").textContent = zoom + "%"; }
 
     // ══ EXIT ══
     function confirmExit() {
@@ -2762,6 +2720,19 @@
       else { errCnt++; if (!failedIdxs.includes(cur)) failedIdxs.push(cur); }
       renderQ();
       snapshotProgreso();
+      // Tras responder, enfocar el botón visible (Siguiente o Finalizar)
+      // para que con Enter/Espacio se avance sin mover el ratón.
+      // Los navegadores no permiten mover el cursor físico por seguridad;
+      // el foco es la alternativa estándar (accesible y con aro visible).
+      setTimeout(() => {
+        const btnNext = document.getElementById("btnNext");
+        const btnFin = document.getElementById("btnFin");
+        const target = (btnFin && btnFin.style.display !== "none") ? btnFin : btnNext;
+        if (target) {
+          try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
+          try { target.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
+        }
+      }, 0);
     }
     function repeatQ() {
       const p = answered[cur];

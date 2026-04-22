@@ -18,7 +18,6 @@ FUNCIONALIDADES CLAVE:
 •	1 archivo JS 
 •	(opcional) 1 archivo CSS
 •	scroll para desplazar
-•	boton Zoom — control fijo en esquina inferior derecha. (mas usado en el movil)
 
 3. prioriza siempre soluciones simples.
 4. que sea escalable. Modular que me permita mas adelante añadir opciones sin tener que rediseñar de nuevo todo .(tengo GITHUB , RAILWAY para hacerla en remoto mas adelante).  
