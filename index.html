@@ -1561,6 +1561,7 @@
           <div class="options" id="opts"></div>
           <div class="nota-wrap" id="qNotaWrap"></div>
           <div class="nota-actions" style="margin-top:.1rem">
+            <button type="button" class="enl-link-btn" id="btnCopyQ" onclick="copiarPregunta('exam')">📋 Copiar pregunta</button>
             <button type="button" class="enl-link-btn" onclick="abrirEnlaces()">📖 Códigos y leyes</button>
           </div>
           <div class="nav-bar">
@@ -1597,6 +1598,7 @@
           <div class="options" id="rOpts"></div>
           <div class="nota-wrap" id="rqNotaWrap"></div>
           <div class="nota-actions" style="margin-top:.1rem">
+            <button type="button" class="enl-link-btn" id="btnCopyRQ" onclick="copiarPregunta('repaso')">📋 Copiar pregunta</button>
             <button type="button" class="enl-link-btn" onclick="abrirEnlaces()">📖 Códigos y leyes</button>
           </div>
           <div class="nav-bar">
@@ -2086,6 +2088,67 @@
         console.warn("[Enlaces] Error borrar:", e.message || e);
         setEnlStatus("err", "Error sync · eliminado local");
       }
+    }
+
+    // ══ COPIAR PREGUNTA AL PORTAPAPELES ══
+    // Devuelve la pregunta del scope activo: "exam" o "repaso".
+    function _preguntaActiva(scope) {
+      if (scope === "repaso") {
+        if (typeof repasoQs !== "undefined" && repasoQs && repasoQs.length) {
+          return repasoQs[repasoCur];
+        }
+        return null;
+      }
+      if (typeof questions !== "undefined" && questions && questions.length) {
+        return questions[cur];
+      }
+      return null;
+    }
+
+    // Construye el texto plano que se copia al portapapeles.
+    function _formatearPregunta(q) {
+      const lines = [String(q.pregunta || "").trim(), ""];
+      ["a", "b", "c", "d"].forEach(l => {
+        if (q[l]) lines.push(l.toUpperCase() + ") " + String(q[l]).trim());
+      });
+      return lines.join("\n");
+    }
+
+    // Copia la pregunta actual con feedback visual en el propio botón.
+    // Fallback con execCommand para WebViews antiguos sin clipboard API.
+    async function copiarPregunta(scope) {
+      const q = _preguntaActiva(scope);
+      const btnId = scope === "repaso" ? "btnCopyRQ" : "btnCopyQ";
+      const btn = document.getElementById(btnId);
+      if (!q || !btn) return;
+      const original = btn.textContent;
+      const txt = _formatearPregunta(q);
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(txt);
+          ok = true;
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = txt;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+      } catch (e) {
+        console.warn("[CopiarPregunta] Error:", e && e.message || e);
+        ok = false;
+      }
+      btn.textContent = ok ? "✓ Copiado" : "✕ Error al copiar";
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.disabled = false;
+      }, 1500);
     }
 
     function abrirEnlaces() {
