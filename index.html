@@ -1578,6 +1578,7 @@
           </div>
         </div>
         <div class="exit-row">
+          <button class="btn btn-outline btn-sm" onclick="marcarHechoManual()" title="Marca este examen con el punto rojo en el panel sin contarlo como un intento.">✅ Marcar como hecho</button>
           <button class="btn btn-danger btn-sm" onclick="confirmExit()">✕ Salir del examen</button>
         </div>
       </div>
@@ -2286,6 +2287,9 @@
     let _continuarDesde = null;  // idx examen | null
     // idx examen elegido desde el modal (para botones del modal)
     let _progModalTargetIdx = -1;
+    // Cuando es true, showDash() no llama a snapshotProgreso (evita pisar
+    // un estado "finalizado" recién marcado a mano)
+    let _skipSnapshotOnExit = false;
 
     function examIdFromExam(ex) {
       return slugify((ex && ex.name) || "");
@@ -2878,12 +2882,30 @@
       showResults();
     }
 
+    // Marca el examen como "finalizado" sin pasar por la pantalla de
+    // resultados. Útil cuando el usuario entra solo a consultar una
+    // pregunta de un examen ya hecho y no quiere que quede como "en curso".
+    // Atajo del paso de marcado de finishExam(), sin contar puntuación.
+    function marcarHechoManual() {
+      if (selIdx < 0) return;
+      const ex = examenes[selIdx];
+      if (!ex) return;
+      if (!confirm("¿Marcar este examen como ya realizado?\n\nAparecerá con el punto rojo en el panel.\nNo se guardará el progreso de esta visita.")) return;
+      clearInterval(timerInt);
+      marcarFinalizado(examIdFromExam(ex));
+      _skipSnapshotOnExit = true;
+      showDash();
+    }
+
     // ══ REPASO ══
     function startRepaso() {
       repasoQs = failedIdxs.map(i => ({ ...questions[i], _oi: i }));
       repasoCur = 0; if (!repasoQs.length) { showResults(); return; }
       showScreen("screenRepaso");
-      document.getElementById("repasoTitle").textContent = `${repasoQs.length} pregunta(s) para repasar`;
+      const ex = examenes[selIdx];
+      const nombre = (ex && ex.name) ? ex.name : "";
+      document.getElementById("repasoTitle").textContent =
+        (nombre ? nombre + " · " : "") + repasoQs.length + " pregunta(s) para repasar";
       renderRepaso();
     }
     function renderRepaso() {
@@ -2940,8 +2962,11 @@
     function showScreen(id) { document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); document.getElementById(id).classList.add("active"); }
     function showDash() {
       // Si veníamos de un examen activo, guarda el estado para poder continuar
+      // (salvo que se haya marcado el flag para no pisar un estado recién
+      // marcado como "finalizado" a mano)
       const inExam = document.getElementById("screenExam").classList.contains("active");
-      if (inExam) snapshotProgreso();
+      if (inExam && !_skipSnapshotOnExit) snapshotProgreso();
+      _skipSnapshotOnExit = false;
       clearInterval(timerInt);
       document.getElementById("btnExitHdr").style.display = "none";
       showScreen("screenDash");
